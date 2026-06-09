@@ -1,0 +1,141 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────
+#  LOCAL DEVELOPMENT — docker compose up --build
+#  Access: http://localhost:8080
+#  DB + Redis data persist in Docker named volumes
+# ─────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       greenway_db
+      POSTGRES_USER:     greenway
+      POSTGRES_PASSWORD: greenway_secret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U greenway -d greenway_db"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - greenway_net
+
+  # ── Redis (Celery broker) ─────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - greenway_net
+
+  # ── Django Backend ───────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_HOST:              db
+      DB_PORT:              "5432"
+      DB_NAME:              greenway_db
+      DB_USER:              greenway
+      DB_PASSWORD:          greenway_secret
+      SECRET_KEY:           local-dev-secret-key-change-in-production
+      DEBUG:                "True"
+      ALLOWED_HOSTS:        "localhost,127.0.0.1,backend"
+      CORS_ALLOWED_ORIGINS: "http://localhost:8080,http://127.0.0.1:8080"
+      REDIS_URL:            "redis://redis:6379/0"
+      GUNICORN_WORKERS:     "2"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - greenway_net
+
+  # ── Celery Worker ────────────────────────────────────
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: >
+      sh -c "celery -A greenway worker --loglevel=info --concurrency=2"
+    environment:
+      DB_HOST:         db
+      DB_PORT:         "5432"
+      DB_NAME:         greenway_db
+      DB_USER:         greenway
+      DB_PASSWORD:     greenway_secret
+      SECRET_KEY:      local-dev-secret-key-change-in-production
+      DEBUG:           "True"
+      REDIS_URL:       "redis://redis:6379/0"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - greenway_net
+
+  # ── Celery Beat (scheduler) ──────────────────────────
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: >
+      sh -c "celery -A greenway beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+    environment:
+      DB_HOST:         db
+      DB_PORT:         "5432"
+      DB_NAME:         greenway_db
+      DB_USER:         greenway
+      DB_PASSWORD:     greenway_secret
+      SECRET_KEY:      local-dev-secret-key-change-in-production
+      DEBUG:           "True"
+      REDIS_URL:       "redis://redis:6379/0"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - greenway_net
+
+  # ── React Frontend (Nginx) ───────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - greenway_net
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  greenway_net:
+    driver: bridge
