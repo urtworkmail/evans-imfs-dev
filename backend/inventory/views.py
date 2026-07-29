@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.db import transaction
 from .models import FabricStock, FinishedGoodsInventory, InventoryLog
 from .serializers import FabricStockSerializer, FinishedGoodsSerializer, InventoryLogSerializer
+from users.permissions import ActionPermission
 
 
 class FabricStockViewSet(viewsets.ReadOnlyModelViewSet):
@@ -21,7 +22,10 @@ class FinishedGoodsViewSet(viewsets.ReadOnlyModelViewSet):
 class InventoryLogViewSet(viewsets.ModelViewSet):
     queryset           = InventoryLog.objects.all().order_by('-created_at')
     serializer_class   = InventoryLogSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [ActionPermission]
+    permission_map     = {'create': 'inventory.log'}
+    # Logs are an immutable audit trail — no update/delete via the API.
+    http_method_names  = ['get', 'post', 'head', 'options']
 
     def perform_create(self, serializer):
         log = serializer.save(created_by=self.request.user)

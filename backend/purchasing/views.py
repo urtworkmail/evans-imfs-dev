@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from .models import PurchaseOrder, PurchaseOrderItem
 from .serializers import PurchaseOrderSerializer, CreatePurchaseOrderSerializer
 from products.models import Supplier, Product
+from users.permissions import ActionPermission, require_permission
 
 
 def _next_po_number():
@@ -18,7 +19,15 @@ def _next_po_number():
 class PurchaseOrderViewSet(viewsets.ModelViewSet):
     queryset           = PurchaseOrder.objects.prefetch_related('items').select_related('supplier', 'created_by')
     serializer_class   = PurchaseOrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [ActionPermission]
+    permission_map = {
+        'create':         'reorder.order',
+        'update':         'reorder.order',
+        'partial_update': 'reorder.order',
+        'destroy':        'reorder.order',
+        'mark_received':  'reorder.order',
+        'update_status':  'reorder.order',
+    }
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -87,7 +96,7 @@ class PurchaseOrderViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([require_permission('reorder.order')])
 def place_order(request):
     """
     Called from the Reorder Planner 'Order Now' button.
