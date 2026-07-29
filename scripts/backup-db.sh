@@ -2,12 +2,12 @@
 # ──────────────────────────────────────────────────────
 #  Greenway Golf — PostgreSQL Backup Script
 #  Usage:  ./scripts/backup-db.sh
-#  Cron:   0 2 * * * /opt/greenway/scripts/backup-db.sh
+#  Cron:   0 2 * * * /opt/evansimfs/scripts/backup-db.sh
 # ──────────────────────────────────────────────────────
 
 set -e
 
-BACKUP_DIR="${BACKUP_DIR:-/opt/greenway/backups}"
+BACKUP_DIR="${BACKUP_DIR:-/opt/evansimfs/backups}"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="${BACKUP_DIR}/greenway_${TIMESTAMP}.sql.gz"
 RETAIN_DAYS="${RETAIN_DAYS:-30}"

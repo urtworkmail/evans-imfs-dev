@@ -67,12 +67,6 @@ export default function LoginPage() {
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
-
-        <div style={{ marginTop: 20, padding: '12px 14px', background: 'var(--gray-50)', borderRadius: 6, fontSize: 12, color: 'var(--gray-500)' }}>
-          <div style={{ fontWeight: 600, marginBottom: 4 }}>Demo accounts</div>
-          <div>admin / admin123 — Manager: sara / manager123</div>
-          <div>Viewer: omar / viewer123 — Warehouse: zara / warehouse123</div>
-        </div>
       </div>
     </div>
   )
