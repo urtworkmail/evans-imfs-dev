@@ -18,13 +18,24 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Optional: bind-mount for manual backup access
-      # - /opt/greenway/db-backups:/backups
+      # - /opt/evansimfs/db-backups:/backups
     restart: always
 
   backend:
     environment:
       DEBUG: "False"
       GUNICORN_WORKERS: ${GUNICORN_WORKERS:-4}
+      ALLOWED_HOSTS: "egcoperations.com,www.egcoperations.com,backend,localhost,127.0.0.1"
+      CORS_ALLOWED_ORIGINS: "https://egcoperations.com,https://www.egcoperations.com"
+      # Shopify (values from .env)
+      SHOPIFY_SHOP_URL: ${SHOPIFY_SHOP_URL}
+      SHOPIFY_ACCESS_TOKEN: ${SHOPIFY_ACCESS_TOKEN}
+      # QuickBooks (values from .env)
+      QB_CLIENT_ID: ${QB_CLIENT_ID}
+      QB_CLIENT_SECRET: ${QB_CLIENT_SECRET}
+      QB_REALM_ID: ${QB_REALM_ID}
+      QB_REFRESH_TOKEN: ${QB_REFRESH_TOKEN}
+      QB_ENVIRONMENT: ${QB_ENVIRONMENT}
     restart: always
     logging:
       driver: "json-file"
@@ -71,7 +82,7 @@ services:
 
 volumes:
   postgres_data:
-    external: true          # Pre-created on VPS: docker volume create postgres_data
+    external: true          # Pre-created on VPS: docker volume create greenway_postgres_data
     name: greenway_postgres_data
   certbot_www:
   certbot_certs:

@@ -9,3 +9,5 @@ celery==5.3.6
 redis==5.0.1
 django-celery-beat==2.6.0
 requests==2.31.0
+intuit-oauth
+python-quickbooks
