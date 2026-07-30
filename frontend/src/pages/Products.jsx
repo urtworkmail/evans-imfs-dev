@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { productsApi, suppliersApi } from '../api/client'
 import { Spinner, Modal, ColorSwatch, AlertBanner } from '../components/UI'
 import { colorHex } from '../utils/fmt'
+import { useAuth } from '../context/AuthContext'
 
 const safeArray = (data) =>
   Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
@@ -13,6 +14,7 @@ const EMPTY = {
 }
 
 export default function Products() {
+  const { hasPermission } = useAuth()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -101,7 +103,9 @@ export default function Products() {
       <div className="flex items-center justify-between mb-4" style={{ flexWrap: "wrap", gap: 10 }}>
         <input className="form-input" style={{ width: '100%', maxWidth: 300 }} placeholder="Search by name or SKU…"
           value={search} onChange={e => setSearch(e.target.value)} />
-        <button className="btn btn-primary btn-sm" onClick={openAdd}>+ Add Product</button>
+        {hasPermission('products.create') && (
+          <button className="btn btn-primary btn-sm" onClick={openAdd}>+ Add Product</button>
+        )}
       </div>
 
       <div className="card table-wrap">
@@ -133,7 +137,11 @@ export default function Products() {
                   ? <span className="badge badge-healthy">Active</span>
                   : <span className="badge badge-gray">Inactive</span>}
                 </td>
-                <td><button className="btn btn-outline btn-xs" onClick={() => openEdit(p)}>Edit</button></td>
+                <td>
+                  {hasPermission('products.edit') && (
+                    <button className="btn btn-outline btn-xs" onClick={() => openEdit(p)}>Edit</button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { suppliersApi } from '../api/client'
 import { Spinner, Modal, AlertBanner } from '../components/UI'
 import { fmtMoney } from '../utils/fmt'
+import { useAuth } from '../context/AuthContext'
 
 const safeArray = (data) =>
   Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
@@ -9,6 +10,7 @@ const safeArray = (data) =>
 const EMPTY = { name: '', contact_email: '', lead_time_days: 14, moq: '', cost_per_unit: '', notes: '' }
 
 export default function Suppliers() {
+  const { hasPermission } = useAuth()
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -72,7 +74,9 @@ export default function Suppliers() {
       {msg && <AlertBanner type={msg.type === 'success' ? 'success' : 'critical'}>{msg.text}</AlertBanner>}
       <div className="flex items-center justify-between mb-4">
         <div />
-        <button className="btn btn-primary btn-sm" onClick={openAdd}>+ Add Supplier</button>
+        {hasPermission('suppliers.create') && (
+          <button className="btn btn-primary btn-sm" onClick={openAdd}>+ Add Supplier</button>
+        )}
       </div>
 
       <div className="card table-wrap">
@@ -95,8 +99,12 @@ export default function Suppliers() {
                 <td style={{ color: 'var(--gray-500)', fontSize: 12, maxWidth: 200 }}>{s.notes || '—'}</td>
                 <td>
                   <div className="flex gap-2">
-                    <button className="btn btn-outline btn-xs" onClick={() => openEdit(s)}>Edit</button>
-                    <button className="btn btn-ghost btn-xs" style={{ color: 'var(--red)' }} onClick={() => handleDelete(s.id)}>Delete</button>
+                    {hasPermission('suppliers.edit') && (
+                      <button className="btn btn-outline btn-xs" onClick={() => openEdit(s)}>Edit</button>
+                    )}
+                    {hasPermission('suppliers.delete') && (
+                      <button className="btn btn-ghost btn-xs" style={{ color: 'var(--red)' }} onClick={() => handleDelete(s.id)}>Delete</button>
+                    )}
                   </div>
                 </td>
               </tr>

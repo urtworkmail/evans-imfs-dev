@@ -32,7 +32,7 @@ export default function Forecast() {
     const entry = { month }
     data.filter(p => p.projections && p.daily_burn > 0 && p.category !== 'towel').forEach(p => {
       const proj = p.projections[mi]?.projected_units || 0
-      const sq   = p.category === 'bag' ? 4.5 : p.category === 'strap' ? 1.2 : 0
+      const sq   = p.fabric_consumption_sq_yards || 0
       if (sq > 0 && p.color) entry[p.color] = (entry[p.color] || 0) + Math.round(proj * sq)
     })
     return entry

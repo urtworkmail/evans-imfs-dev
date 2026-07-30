@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { forecastApi, purchasingApi } from '../api/client'
 import { Spinner, AlertBanner, StatusBadge } from '../components/UI'
 import { fmtMoney, fmtNum } from '../utils/fmt'
+import { useAuth } from '../context/AuthContext'
 
 // ── Order confirmation modal ───────────────────────────
 function OrderConfirmModal({ alert, onConfirm, onCancel, saving }) {
@@ -70,7 +71,7 @@ function POSuccessToast({ po, onClose }) {
 }
 
 // ── Single reorder row — with data-label for mobile card view ──
-function ReorderRow({ a, poStatus, onOrderClick }) {
+function ReorderRow({ a, poStatus, onOrderClick, canOrder }) {
   const done = ['sent', 'confirmed', 'received'].includes(poStatus)
   return (
     <tr style={done ? { opacity: 0.55 } : {}}>
@@ -108,12 +109,14 @@ function ReorderRow({ a, poStatus, onOrderClick }) {
           ? <span className="badge badge-healthy" style={{ fontSize: 11 }}>
               {poStatus === 'received' ? 'Received ✓' : 'Ordered ✓'}
             </span>
-          : <button
-              className={'btn btn-sm ' + (['critical', 'low'].includes(a.status) ? 'btn-primary' : 'btn-outline')}
-              onClick={onOrderClick}
-            >
-              Order Now
-            </button>
+          : canOrder
+            ? <button
+                className={'btn btn-sm ' + (['critical', 'low'].includes(a.status) ? 'btn-primary' : 'btn-outline')}
+                onClick={onOrderClick}
+              >
+                Order Now
+              </button>
+            : <span className="text-muted" style={{ fontSize: 12 }}>—</span>
         }
       </td>
     </tr>
@@ -121,7 +124,7 @@ function ReorderRow({ a, poStatus, onOrderClick }) {
 }
 
 // ── Table wrapper ──────────────────────────────────────
-function ReorderTable({ rows, alerts, orderedMap, onOrder }) {
+function ReorderTable({ rows, alerts, orderedMap, onOrder, canOrder }) {
   if (rows.length === 0) return (
     <div className="card" style={{ padding: 32, textAlign: 'center', color: 'var(--gray-400)', marginBottom: 20 }}>
       No items in this category.
@@ -146,6 +149,7 @@ function ReorderTable({ rows, alerts, orderedMap, onOrder }) {
                 a={a}
                 poStatus={orderedMap[idx]?.status}
                 onOrderClick={() => onOrder(idx, a)}
+                canOrder={canOrder}
               />
             )
           })}
@@ -157,6 +161,8 @@ function ReorderTable({ rows, alerts, orderedMap, onOrder }) {
 
 // ── Main page ──────────────────────────────────────────
 export default function ReorderPlanner() {
+  const { hasPermission } = useAuth()
+  const canOrder = hasPermission('reorder.order')
   const [alerts,      setAlerts]      = useState([])
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState(null)
@@ -220,14 +226,14 @@ export default function ReorderPlanner() {
         <div className="section-title" style={{ color: 'var(--red)', marginBottom: 0 }}>🔴 Urgent — Order Required</div>
         <span style={{ fontSize: 12, color: 'var(--gray-500)' }}>({urgent.length} items)</span>
       </div>
-      <ReorderTable rows={urgent} alerts={alerts} orderedMap={orderedMap}
+      <ReorderTable rows={urgent} alerts={alerts} orderedMap={orderedMap} canOrder={canOrder}
         onOrder={(idx, a) => setOrdering({ idx, alert: a })} />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <div className="section-title" style={{ marginBottom: 0 }}>🟢 Monitoring — Healthy / Overstock</div>
         <span style={{ fontSize: 12, color: 'var(--gray-500)' }}>({monitoring.length} items)</span>
       </div>
-      <ReorderTable rows={monitoring} alerts={alerts} orderedMap={orderedMap}
+      <ReorderTable rows={monitoring} alerts={alerts} orderedMap={orderedMap} canOrder={canOrder}
         onOrder={(idx, a) => setOrdering({ idx, alert: a })} />
 
       <div style={{ fontSize: 12, color: 'var(--gray-500)', marginTop: 4 }}>

@@ -71,7 +71,12 @@ def _season_multiplier(month):
 
 
 def _cover_days(on_hand, daily_burn):
-    return on_hand / daily_burn if daily_burn > 0 else 9999
+    if daily_burn > 0:
+        return on_hand / daily_burn
+    # No recent demand: treat zero stock as critical (nothing to sell if demand
+    # picks up), not "overstock" — overstock only makes sense when there's
+    # stock sitting unsold.
+    return 9999 if on_hand > 0 else 0
 
 
 def _status(cover_days_val, lead_days):
@@ -117,6 +122,7 @@ def forecast(request):
             'name':         product.name,
             'category':     product.category.name,
             'color':        product.color,
+            'fabric_consumption_sq_yards': product.fabric_consumption_sq_yards,
             'on_hand':      on_hand,
             'daily_burn':   round(daily_burn, 2),
             'weekly_burn':  round(daily_burn * 7, 1),
