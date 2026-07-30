@@ -43,27 +43,24 @@ def _run_fetch(source):
     last_log = FetchLog.objects.filter(source=source).first()
     since    = last_log.fetched_at.date() if last_log else (date.today() - timedelta(days=365))
     up_to    = date.today()
+    mode     = 'live'
 
-    # ── Choose real API or mock based on credentials ─────────────
     try:
         if source == 'shopify':
-            if settings.SHOPIFY_SHOP_URL and settings.SHOPIFY_ACCESS_TOKEN:
-                from .integrations.shopify import fetch_orders as real_fetch
-                raw_orders = real_fetch(since, up_to)
-                mode = 'live'
-            else:
-                from .mock_data import generate_shopify_orders
-                raw_orders = generate_shopify_orders(since, up_to)
-                mode = 'mock'
+            if not (settings.SHOPIFY_SHOP_URL and settings.SHOPIFY_ACCESS_TOKEN):
+                raise ValueError(
+                    "Shopify not configured. Set SHOPIFY_SHOP_URL and SHOPIFY_ACCESS_TOKEN in .env"
+                )
+            from .integrations.shopify import fetch_orders
+            raw_orders = fetch_orders(since, up_to)
         else:
-            if settings.QB_CLIENT_ID and settings.QB_CLIENT_SECRET and settings.QB_REALM_ID:
-                from .integrations.quickbooks import fetch_orders as real_fetch
-                raw_orders = real_fetch(since, up_to)
-                mode = 'live'
-            else:
-                from .mock_data import generate_quickbooks_orders
-                raw_orders = generate_quickbooks_orders(since, up_to)
-                mode = 'mock'
+            if not (settings.QB_CLIENT_ID and settings.QB_CLIENT_SECRET and settings.QB_REALM_ID):
+                raise ValueError(
+                    "QuickBooks not configured. Set QB_CLIENT_ID, QB_CLIENT_SECRET, "
+                    "QB_REALM_ID, QB_REFRESH_TOKEN in .env"
+                )
+            from .integrations.quickbooks import fetch_orders
+            raw_orders = fetch_orders(since, up_to)
     except Exception as exc:
         FetchLog.objects.create(
             source=source, orders_fetched=0, status='error', message=str(exc)
