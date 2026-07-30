@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import Sidebar from './components/Sidebar'
+import ThemeToggle from './components/ThemeToggle'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Inventory from './pages/Inventory'
@@ -63,6 +65,9 @@ function AppLayout() {
       <div className="main-area">
         <div className="topbar">
           <div className="topbar-title">{title}</div>
+          <div className="topbar-actions">
+            <ThemeToggle />
+          </div>
         </div>
         <div className="page-content">
           <ErrorBoundary key={location.pathname}>
@@ -89,13 +94,15 @@ function AppLayout() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/*"    element={<RequireAuth><AppLayout /></RequireAuth>} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/*"    element={<RequireAuth><AppLayout /></RequireAuth>} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
