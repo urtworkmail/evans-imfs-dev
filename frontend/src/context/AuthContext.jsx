@@ -37,8 +37,10 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const hasPermission = (key) => !!user?.effective_permissions?.includes(key)
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   )

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { inventoryApi, forecastApi } from '../api/client'
 import { Spinner, Tabs, StatusBadge, StockBar, ColorSwatch, Modal, AlertBanner } from '../components/UI'
 import { fmtNum, colorHex } from '../utils/fmt'
+import { useAuth } from '../context/AuthContext'
 
 const TABS = [
   { key: 'finished', label: 'Finished Goods' },
@@ -264,6 +265,8 @@ function AdjustmentModal({ onClose, onSaved }) {
 
 // ── Main Inventory page ────────────────────────────────
 export default function Inventory() {
+  const { hasPermission } = useAuth()
+  const canLog = hasPermission('inventory.log')
   const [tab,        setTab]        = useState('finished')
   const [finished,   setFinished]   = useState([])
   const [fabric,     setFabric]     = useState([])
@@ -325,9 +328,11 @@ export default function Inventory() {
 
       <div className="flex items-center justify-between mb-4">
         <div />
-        <button className="btn btn-primary btn-sm" onClick={() => setShowLog(true)}>
-          + Log Adjustment
-        </button>
+        {canLog && (
+          <button className="btn btn-primary btn-sm" onClick={() => setShowLog(true)}>
+            + Log Adjustment
+          </button>
+        )}
       </div>
 
       <Tabs tabs={TABS} active={tab} onChange={setTab} />
@@ -388,11 +393,13 @@ export default function Inventory() {
                       <td>{al.daily_burn != null ? Number(al.daily_burn).toFixed(1) : '—'}</td>
                       <td><StatusBadge status={al.status || 'healthy'} /></td>
                       <td>
-                        <button className="btn btn-outline btn-xs"
-                          onClick={() => setShowLog(true)}
-                          title="Log adjustment for this product">
-                          Adjust
-                        </button>
+                        {canLog && (
+                          <button className="btn btn-outline btn-xs"
+                            onClick={() => setShowLog(true)}
+                            title="Log adjustment for this product">
+                            Adjust
+                          </button>
+                        )}
                       </td>
                     </tr>
                   )
@@ -430,11 +437,13 @@ export default function Inventory() {
                     <td>{al.daily_burn != null ? Number(al.daily_burn).toFixed(2) : '—'}</td>
                     <td><StatusBadge status={al.status || 'healthy'} /></td>
                     <td>
-                      <button className="btn btn-outline btn-xs"
-                        onClick={() => setShowLog(true)}
-                        title="Log adjustment for this fabric">
-                        Adjust
-                      </button>
+                      {canLog && (
+                        <button className="btn btn-outline btn-xs"
+                          onClick={() => setShowLog(true)}
+                          title="Log adjustment for this fabric">
+                          Adjust
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )

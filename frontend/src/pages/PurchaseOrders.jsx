@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { purchasingApi } from '../api/client'
 import { Spinner, AlertBanner, Modal, StatusBadge } from '../components/UI'
 import { fmtMoney, fmtNum, fmtDate } from '../utils/fmt'
+import { useAuth } from '../context/AuthContext'
 
 const safeArray = (d) => Array.isArray(d?.results) ? d.results : Array.isArray(d) ? d : []
 
@@ -12,7 +13,7 @@ function POStatusBadge({ status }) {
   return <span className={`badge ${STATUS_COLORS[status] || 'badge-gray'}`}>{status}</span>
 }
 
-function PODetailModal({ po, onClose, onStatusChange, onReceive }) {
+function PODetailModal({ po, onClose, onStatusChange, onReceive, canOrder }) {
   const [updating, setUpdating] = useState(false)
   const [msg, setMsg] = useState(null)
 
@@ -75,19 +76,23 @@ function PODetailModal({ po, onClose, onStatusChange, onReceive }) {
         </table>
       </div>
 
-      <div className="section-title">Update Status</div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-        {STATUS_OPTIONS.filter(s => s !== po.status).map(s => (
-          <button key={s} className="btn btn-outline btn-sm" onClick={() => changeStatus(s)} disabled={updating}>
-            Mark as "{s}"
-          </button>
-        ))}
-        {po.status !== 'received' && po.status !== 'cancelled' && (
-          <button className="btn btn-primary btn-sm" onClick={receive} disabled={updating}>
-            ✓ Mark Received & Update Inventory
-          </button>
-        )}
-      </div>
+      {canOrder && (
+        <>
+          <div className="section-title">Update Status</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            {STATUS_OPTIONS.filter(s => s !== po.status).map(s => (
+              <button key={s} className="btn btn-outline btn-sm" onClick={() => changeStatus(s)} disabled={updating}>
+                Mark as "{s}"
+              </button>
+            ))}
+            {po.status !== 'received' && po.status !== 'cancelled' && (
+              <button className="btn btn-primary btn-sm" onClick={receive} disabled={updating}>
+                ✓ Mark Received & Update Inventory
+              </button>
+            )}
+          </div>
+        </>
+      )}
 
       <div className="form-row" style={{ marginTop: 16 }}>
         <button className="btn btn-outline" onClick={onClose}>Close</button>
@@ -97,6 +102,8 @@ function PODetailModal({ po, onClose, onStatusChange, onReceive }) {
 }
 
 export default function PurchaseOrders() {
+  const { hasPermission } = useAuth()
+  const canOrder = hasPermission('reorder.order')
   const [orders,   setOrders]   = useState([])
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState(null)
@@ -201,7 +208,9 @@ export default function PurchaseOrders() {
                 <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{fmtDate(o.created_at)}</td>
                 <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{o.created_by_name || '—'}</td>
                 <td onClick={e => e.stopPropagation()}>
-                  <button className="btn btn-ghost btn-xs" style={{ color: 'var(--red)' }} onClick={() => handleDelete(o.id)}>Delete</button>
+                  {canOrder && (
+                    <button className="btn btn-ghost btn-xs" style={{ color: 'var(--red)' }} onClick={() => handleDelete(o.id)}>Delete</button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -215,6 +224,7 @@ export default function PurchaseOrders() {
           onClose={() => setDetail(null)}
           onStatusChange={handleStatusChange}
           onReceive={handleReceive}
+          canOrder={canOrder}
         />
       )}
     </div>
