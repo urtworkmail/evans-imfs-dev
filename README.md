@@ -1,4 +1,4 @@
-# Greenway Golf Co. — Inventory & Forecasting Platform
+# Evans Golf — Inventory & Forecasting Platform (IMFS)
 
 Full-stack platform: Django REST API + PostgreSQL + React 19 + Nginx, fully containerised.
 
@@ -8,7 +8,7 @@ Full-stack platform: Django REST API + PostgreSQL + React 19 + Nginx, fully cont
 
 ```bash
 # 1. Unzip and enter project
-unzip greenway-platform.zip && cd greenway
+unzip evansimfs-platform.zip && cd greenway
 
 # 2. Start everything
 docker compose up --build
@@ -19,19 +19,61 @@ docker compose up --build
 > ℹ️ The app runs on port **8080** (not 80) to avoid conflicts with Apache/IIS/other services
 > that may be installed on your machine.
 
-### Default Logins
+### First Login
 
-| Username | Password | Role |
-|---|---|---|
-| `admin` | `admin123` | Full admin |
-| `sara` | `manager123` | Manager |
-| `omar` | `viewer123` | Viewer |
-| `zara` | `warehouse123` | Warehouse |
+The container does **not** create any users automatically. On first run, create your admin account:
 
-### Load Demo Sales Data
+```bash
+docker compose exec backend python manage.py createsuperuser
+```
 
-After login → go to **Sales** → click **↓ Fetch Shopify** then **↓ Fetch QuickBooks**.
-This generates 12 months of realistic order history and populates all forecasts and charts.
+For local testing only, you can instead seed a small set of demo accounts covering every role
+(admin, general manager, warehouse manager, viewer) with weak, well-known passwords:
+
+```bash
+docker compose exec backend python manage.py seed_data
+```
+
+**Never run `seed_data` against production** — the passwords it creates are public (they're in
+this README) and only meant for exercising the role-based permission system locally.
+
+### Load Sales Data
+
+Sales data comes from your real Shopify and QuickBooks accounts — go to **Sales** → **↓ Fetch
+Shopify** / **↓ Fetch QuickBooks**. This requires the credentials below to be set in `.env`; without
+them, the fetch returns a clear "not configured" error rather than fabricating data.
+
+```bash
+# Shopify
+SHOPIFY_SHOP_URL=yourshop.myshopify.com
+SHOPIFY_ACCESS_TOKEN=shpat_xxxxx
+
+# QuickBooks
+QB_CLIENT_ID=xxxxx
+QB_CLIENT_SECRET=xxxxx
+QB_REALM_ID=xxxxx
+QB_REFRESH_TOKEN=xxxxx
+QB_ENVIRONMENT=production
+```
+
+---
+
+## Role-Based Access
+
+Every user has a role (persona) — `admin`, `general_manager`, `warehouse_manager`, `sales_analyst`,
+or `viewer` — each mapped to a fixed set of permission keys (e.g. `products.edit`, `inventory.log`,
+`reorder.order`). Permissions are enforced **server-side** on every write endpoint (products,
+suppliers, inventory logs, purchase orders) — not just hidden in the UI. The frontend additionally
+hides actions a user's role can't perform, so nobody sees a button that would just fail.
+
+Manage roles and per-user permission overrides under **Settings → User Management** (admin only).
+
+---
+
+## Appearance
+
+The app supports light and dark mode — toggle via the icon in the top bar (or on the login page).
+The choice is remembered per browser.
 
 ---
 
@@ -98,7 +140,6 @@ docker compose down -v
 # Run Django management commands
 docker compose exec backend python manage.py shell
 docker compose exec backend python manage.py createsuperuser
-docker compose exec backend python manage.py seed_data
 
 # Access PostgreSQL directly
 docker compose exec db psql -U greenway -d greenway_db
@@ -115,37 +156,37 @@ docker compose up -d --build backend
 greenway/
 ├── backend/
 │   ├── greenway/          # Django settings, URLs, WSGI
-│   ├── users/             # Custom User model + JWT auth
-│   ├── products/          # Products, Suppliers, Categories
-│   ├── inventory/         # FabricStock, FinishedGoods, Logs
-│   ├── sales/             # Orders, mock Shopify/QB data fetch
-│   ├── forecasting/       # Demand forecast + reorder alerts
-│   ├── settings_app/      # Fetch schedule, system parameters
+│   ├── users/              # Custom User model, JWT auth, permission enforcement
+│   ├── products/           # Products, Suppliers, Categories
+│   ├── inventory/          # FabricStock, FinishedGoods, immutable audit logs
+│   ├── sales/               # Orders + live Shopify/QuickBooks integrations
+│   ├── forecasting/        # Demand forecast + reorder alerts
+│   ├── settings_app/       # Fetch schedule, system parameters
 │   ├── Dockerfile
-│   └── entrypoint.sh      # Wait for DB → migrate → seed → gunicorn
+│   └── entrypoint.sh       # Wait for DB → migrate → gunicorn
 ├── frontend/
 │   ├── src/
-│   │   ├── api/client.js  # Axios API client (all endpoints)
-│   │   ├── components/    # UI.jsx (shared), Sidebar.jsx
-│   │   ├── context/       # AuthContext (JWT, login, logout)
-│   │   ├── pages/         # Dashboard, Inventory, Sales, Forecast…
-│   │   └── utils/fmt.js   # Money/number formatting helpers
-│   ├── nginx.conf         # Nginx inside frontend container
-│   └── Dockerfile         # Multi-stage: node build → nginx serve
-├── nginx/prod.conf        # Production SSL Nginx config
+│   │   ├── api/client.js   # Axios API client (all endpoints)
+│   │   ├── components/     # UI.jsx (shared), Sidebar.jsx, ThemeToggle.jsx
+│   │   ├── context/        # AuthContext (JWT, permissions), ThemeContext (dark/light)
+│   │   ├── pages/          # Dashboard, Inventory, Sales, Forecast…
+│   │   └── utils/fmt.js    # Money/number formatting helpers
+│   ├── nginx.conf          # Nginx inside frontend container
+│   └── Dockerfile          # Multi-stage: node build → nginx serve
+├── nginx/prod.conf         # Production SSL Nginx config
 ├── scripts/
-│   ├── backup-db.sh       # pg_dump → gzipped backup
-│   └── restore-db.sh      # Restore from backup file
-├── docker-compose.yml         # LOCAL — hardcoded safe defaults
+│   ├── backup-db.sh        # pg_dump → gzipped backup
+│   └── restore-db.sh       # Restore from backup file
+├── docker-compose.yml         # LOCAL — safe defaults, overridable via .env
 ├── docker-compose.prod.yml    # VPS — external volume + SSL
-└── .env.example               # Production env template
+└── .env.example                # Production env template
 ```
 
 ---
 
 ## Database Persistence
 
-PostgreSQL data lives in a **Docker named volume** (`postgres_data`).
+PostgreSQL data lives in a **Docker named volume** (`greenway_postgres_data`).
 
 | Action | Data safe? |
 |---|---|
@@ -187,9 +228,9 @@ Internet → [Nginx reverse proxy: 80/443 + SSL]
 ### VPS Setup — Step by Step
 
 #### 1. Provision VPS
-- Ubuntu 22.04 LTS, minimum 2 vCPU / 2 GB RAM / 20 GB SSD
+- Ubuntu 22.04+ LTS, minimum 2 vCPU / 2 GB RAM / 20 GB SSD (a small root volume will fill up fast
+  once you're building images regularly — 20GB+ is a practical minimum, not just a floor)
 - Open ports: 22 (SSH), 80 (HTTP), 443 (HTTPS)
-- Providers: Hetzner (cheapest), DigitalOcean, Vultr, Linode
 
 #### 2. Install Docker
 
@@ -212,8 +253,8 @@ ufw enable
 #### 4. Clone and configure
 
 ```bash
-mkdir -p /opt/greenway && cd /opt/greenway
-git clone https://github.com/yourorg/greenway.git .
+mkdir -p /opt/evansimfs && cd /opt/evansimfs
+git clone <your-repository-url> .
 
 # Create production .env
 cp .env.example .env
@@ -222,12 +263,13 @@ nano .env
 
 Fill in your `.env`:
 ```bash
-SECRET_KEY=$(openssl rand -base64 50)   # paste output here
+SECRET_KEY=$(openssl rand -base64 50 | tr -d '\n')   # paste output here — must be a single line
 DEBUG=False
 DB_PASSWORD=YourStrongPassword123!
 ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com,backend
 CORS_ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
 GUNICORN_WORKERS=5
+# Plus SHOPIFY_* and QB_* credentials — see "Load Sales Data" above
 ```
 
 #### 5. Update domain in Nginx config
@@ -268,7 +310,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
-# All 5 containers should show "Up"
+# All containers should show "Up" (db, backend, celery, celery-beat, frontend, nginx-proxy, redis)
 
 curl -I https://yourdomain.com
 # Should return HTTP/2 200
@@ -277,26 +319,30 @@ curl -I https://yourdomain.com
 #### 10. Set up daily backups (cron)
 
 ```bash
-mkdir -p /opt/greenway/backups
-chmod +x /opt/greenway/scripts/backup-db.sh
+mkdir -p /opt/evansimfs/backups
+chmod +x /opt/evansimfs/scripts/backup-db.sh
 
 # Add to crontab (runs at 2:00 AM daily)
-(crontab -l 2>/dev/null; echo "0 2 * * * cd /opt/greenway && ./scripts/backup-db.sh >> /opt/greenway/backups/backup.log 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "0 2 * * * cd /opt/evansimfs && ./scripts/backup-db.sh >> /opt/evansimfs/backups/backup.log 2>&1") | crontab -
 ```
+
+> ⚠️ Verify these actually produce non-empty files after the first run
+> (`ls -lh /opt/evansimfs/backups`) — a cron job silently producing 0-byte backups is worse than
+> no backup at all, because it looks like it's working.
 
 ---
 
 ### Production Management
 
 ```bash
-cd /opt/greenway
+cd /opt/evansimfs
 alias prod="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
 
 prod ps                                    # Status
 prod logs -f backend                       # Backend logs
 prod exec backend python manage.py shell   # Django shell
 prod exec db psql -U greenway -d greenway_db  # DB access
-prod up -d --build backend frontend        # Deploy update
+prod up -d --build backend celery celery-beat frontend  # Deploy update
 prod down                                  # Stop (data safe)
 
 # Backup now
@@ -315,43 +361,15 @@ prod exec nginx-proxy nginx -s reload
 ### Deploying Updates
 
 ```bash
-cd /opt/greenway
+cd /opt/evansimfs
 git pull origin main
 
 # Rebuild and restart — migrations run automatically, DB untouched
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-```
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build backend celery celery-beat frontend
 
----
-
-## Connecting Real APIs (Shopify & QuickBooks)
-
-The app ships with a realistic mock data generator. To switch to real APIs:
-
-**Step 1** — Add credentials to `.env`:
-```bash
-# Shopify
-SHOPIFY_SHOP_URL=yourshop.myshopify.com
-SHOPIFY_ACCESS_TOKEN=shpat_xxxxx
-
-# QuickBooks
-QB_CLIENT_ID=xxxxx
-QB_CLIENT_SECRET=xxxxx
-QB_REALM_ID=xxxxx
-QB_REFRESH_TOKEN=xxxxx
-```
-
-**Step 2** — Create real integration files:
-- `backend/sales/integrations/shopify.py` — implement `fetch_orders(since_date)`
-- `backend/sales/integrations/quickbooks.py` — implement `fetch_orders(since_date)`
-
-**Step 3** — Update `backend/sales/views.py` in `_run_fetch()`:
-```python
-# Replace:
-raw_orders = generate_shopify_orders(since, up_to)
-# With:
-from .integrations.shopify import fetch_orders
-raw_orders = fetch_orders(since)
+# If backend/celery/celery-beat were rebuilt, nginx-proxy needs a restart too —
+# it caches the backend container's IP and won't notice the new one otherwise.
+docker restart evansimfs-nginx-proxy-1
 ```
 
 ---
@@ -360,25 +378,32 @@ raw_orders = fetch_orders(since)
 
 | Variable | Local default | Description |
 |---|---|---|
-| `SECRET_KEY` | set in compose | Django secret — use `openssl rand -base64 50` for prod |
+| `SECRET_KEY` | dev-only default | Django secret — use `openssl rand -base64 50 \| tr -d '\n'` for prod (must be a single line) |
 | `DEBUG` | `True` | Always `False` in production |
 | `DB_NAME` | `greenway_db` | PostgreSQL database name |
 | `DB_USER` | `greenway` | PostgreSQL username |
-| `DB_PASSWORD` | `greenway_secret` | PostgreSQL password — change for prod |
+| `DB_PASSWORD` | dev-only default | PostgreSQL password — change for prod |
 | `DB_HOST` | `db` | Docker service name — don't change |
 | `ALLOWED_HOSTS` | `localhost,…` | Comma-separated Django allowed hosts |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:8080` | Comma-separated CORS origins |
 | `GUNICORN_WORKERS` | `2` | Workers = 2×CPUs+1 |
+| `SHOPIFY_SHOP_URL` / `SHOPIFY_ACCESS_TOKEN` | — | Required for the Sales page's Shopify fetch to work |
+| `QB_CLIENT_ID` / `QB_CLIENT_SECRET` / `QB_REALM_ID` / `QB_REFRESH_TOKEN` | — | Required for the QuickBooks fetch to work |
+
+> Changing `DB_PASSWORD` on an existing deployment does **not** change the actual Postgres role
+> password — Postgres only applies it on first init. To rotate it later, run `ALTER ROLE greenway
+> WITH PASSWORD '...'` inside the `db` container, then update `.env` to match.
 
 ---
 
 ## Production Security Checklist
 
-- [ ] `SECRET_KEY` is unique random 50+ char string
+- [ ] `SECRET_KEY` is a unique random 50+ char string, set via `.env` (not the code default)
 - [ ] `DEBUG=False`
-- [ ] `DB_PASSWORD` is strong (16+ chars)
+- [ ] `DB_PASSWORD` is strong (16+ chars) and matches the actual Postgres role password
 - [ ] HTTPS working (`curl -I https://yourdomain.com`)
 - [ ] UFW firewall enabled (only 22, 80, 443 open)
 - [ ] SSH password auth disabled (key-only)
-- [ ] Automated daily backups running (`crontab -l`)
+- [ ] Automated daily backups running and verified non-empty (`crontab -l`, check file sizes)
 - [ ] Default `admin` password changed after first login
+- [ ] `seed_data` has never been run against this environment
