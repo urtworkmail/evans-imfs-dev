@@ -250,7 +250,7 @@ body {
   flex-shrink: 0;
   transition: background-color 0.25s var(--ease), border-color 0.25s var(--ease);
 }
-.topbar-actions { display: flex; gap: 8px; align-items: center; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
 
 .page-content {
   flex: 1;
@@ -312,9 +312,8 @@ body {
 /* ── Cards ──────────────────────────────────────────── */
 .card {
   background: var(--surface);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border: 1px solid var(--gray-100);
+  border-radius: 14px;
   transition: background-color 0.25s var(--ease), border-color 0.25s var(--ease);
 }
 .card-pad { padding: 20px; }
@@ -326,10 +325,9 @@ body {
 
 .metric-card {
   background: var(--surface);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius);
+  border: 1px solid var(--gray-100);
+  border-radius: 14px;
   padding: 18px 20px;
-  box-shadow: var(--shadow);
 }
 .metric-label { font-size: 12px; color: var(--gray-500); margin-bottom: 6px; }
 .metric-value { font-size: 24px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
@@ -416,24 +414,23 @@ tbody tr:hover td { background: var(--row-hover); }
 /* ── Tabs ────────────────────────────────────────────── */
 .tabs {
   display: flex;
-  border-bottom: 1px solid var(--gray-200);
+  gap: 22px;
+  border-bottom: 1px solid var(--gray-100);
   margin-bottom: 20px;
 }
 .tab-btn {
-  padding: 9px 16px;
-  font-size: 13px;
+  padding: 9px 2px 12px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--gray-500);
   cursor: pointer;
   border: none;
   background: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition: color 0.1s;
+  transition: color 0.16s var(--ease);
   font-family: inherit;
 }
-.tab-btn:hover { color: var(--gray-700); }
-.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab-btn:hover { color: var(--gray-900); }
+.tab-btn.active { color: var(--gray-900); font-weight: 700; }
 
 /* ── Forms ───────────────────────────────────────────── */
 .form-group { margin-bottom: 14px; }
@@ -466,6 +463,18 @@ tbody tr:hover td { background: var(--row-hover); }
   box-shadow: 0 0 0 3px rgba(37,99,235,0.16);
 }
 .form-textarea { resize: vertical; min-height: 70px; }
+.form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+[data-theme="dark"] .form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2398989f' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
 
 /* ── iOS-style toggle switch ─────────────────────────────
    Opt-in class on a plain <input type="checkbox"> — used for on/off

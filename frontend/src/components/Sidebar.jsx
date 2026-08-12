@@ -20,7 +20,8 @@ const IcoSales      = () => <Icon d={<><polyline points="22 12 18 12 15 21 9 3 6
 const IcoForecast   = () => <Icon d={<><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>} />
 const IcoComparison = () => <Icon d={<><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></>} />
 const IcoUsers      = () => <Icon d={<><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />
-const IcoSettings   = () => <Icon d={<><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></>} />
+const IcoSettings   = () => <Icon d={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></>} />
+const IcoChevronUp  = () => <Icon d={<polyline points="18 15 12 9 6 15"/>} size={12} />
 
 const NAV = [
   { section: 'Overview', items: [
@@ -160,7 +161,7 @@ export default function Sidebar() {
             </div>
             <div className="sidebar-user-role">{user?.role_label || user?.role}</div>
           </div>
-          <span className="text-muted" style={{ fontSize: 11 }}>▲</span>
+          <span className="text-muted" style={{ display: 'flex', flexShrink: 0 }}><IcoChevronUp /></span>
         </div>
       </div>
     </aside>
