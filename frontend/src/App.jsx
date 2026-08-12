@@ -17,18 +17,18 @@ import Comparison from './pages/Comparison'
 import UserManagement from './pages/UserManagement'
 import Settings from './pages/Settings'
 
-const PAGE_TITLES = {
-  '/': 'Dashboard',
-  '/inventory': 'Inventory',
-  '/reorder': 'Reorder Planner',
-  '/purchase-orders': 'Purchase Orders',
-  '/products': 'Products',
-  '/suppliers': 'Suppliers',
-  '/sales': 'Sales',
-  '/forecast': 'Forecasting',
-  '/comparison': 'Comparison Analysis',
-  '/users': 'User Management',
-  '/settings': 'Settings',
+const PAGE_META = {
+  '/':                { title: 'Dashboard',           subtitle: 'Live overview of stock health, sales, and reorder alerts.' },
+  '/inventory':       { title: 'Inventory',           subtitle: 'Finished goods and raw fabric stock levels.' },
+  '/reorder':         { title: 'Reorder Planner',     subtitle: 'What to order next, and by when.' },
+  '/purchase-orders': { title: 'Purchase Orders',     subtitle: 'Track orders placed with suppliers.' },
+  '/products':        { title: 'Products',            subtitle: 'Manage your product catalog.' },
+  '/suppliers':       { title: 'Suppliers',           subtitle: 'Manage supplier details, lead times, and costs.' },
+  '/sales':           { title: 'Sales',                subtitle: 'Shopify and QuickBooks order history.' },
+  '/forecast':        { title: 'Forecasting',          subtitle: 'Demand projections and fabric consumption.' },
+  '/comparison':      { title: 'Comparison Analysis', subtitle: 'Compare sales performance across two periods.' },
+  '/users':           { title: 'User Management',     subtitle: 'Manage accounts, roles, and permissions.' },
+  '/settings':        { title: 'Settings',              subtitle: 'Fetch schedule, inventory parameters, integrations, and security.' },
 }
 
 function RequireAuth({ children }) {
@@ -58,18 +58,23 @@ function RequireAdmin({ children }) {
 
 function AppLayout() {
   const location = useLocation()
-  const title = PAGE_TITLES[location.pathname] || 'Evans Golf IMFS'
+  const meta = PAGE_META[location.pathname] || { title: 'Evans Golf IMFS' }
   return (
     <div className="app-shell">
       <Sidebar />
       <div className="main-area">
         <div className="topbar">
-          <div className="topbar-title">{title}</div>
           <div className="topbar-actions">
             <ThemeToggle />
           </div>
         </div>
         <div className="page-content">
+          <div className="page-header">
+            <div>
+              <div className="page-title">{meta.title}</div>
+              {meta.subtitle && <div className="page-subtitle">{meta.subtitle}</div>}
+            </div>
+          </div>
           <ErrorBoundary key={location.pathname}>
             <Routes>
               <Route path="/"                element={<Dashboard />} />

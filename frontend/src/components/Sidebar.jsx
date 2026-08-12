@@ -51,10 +51,12 @@ export default function Sidebar() {
   const location       = useLocation()
   const { user, logout } = useAuth()
   const [open, setOpen]  = useState(false)
-  const navRef           = useRef(null)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const navRef            = useRef(null)
+  const userMenuRef       = useRef(null)
 
   // Close menu on route change
-  useEffect(() => { setOpen(false) }, [location.pathname])
+  useEffect(() => { setOpen(false); setUserMenuOpen(false) }, [location.pathname])
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -64,6 +66,15 @@ export default function Sidebar() {
     if (open) document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
+
+  // Close user menu when clicking outside it
+  useEffect(() => {
+    const handler = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false)
+    }
+    if (userMenuOpen) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [userMenuOpen])
 
   const handleNav = (path) => { navigate(path); setOpen(false) }
 
@@ -113,22 +124,44 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* User area */}
-      <div className="sidebar-user">
-        <div className="sidebar-avatar">
-          {user ? initials(`${user.first_name || ''} ${user.last_name || user.username}`) : 'U'}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="sidebar-user-name"
-            style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {user?.first_name} {user?.last_name}
+      {/* User area — click to open account menu */}
+      <div className="sidebar-user-wrap" ref={userMenuRef}>
+        {userMenuOpen && (
+          <div className="user-menu-popover">
+            <div className="user-menu-header">
+              <div className="sidebar-avatar">
+                {user ? initials(`${user.first_name || ''} ${user.last_name || user.username}`) : 'U'}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="font-medium" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user?.first_name} {user?.last_name}
+                </div>
+                <div className="text-muted" style={{ fontSize: 12 }}>{user?.role_label || user?.role}</div>
+              </div>
+            </div>
+            {user?.role === 'admin' && (
+              <div className="user-menu-item" onClick={() => handleNav('/settings')}>
+                <IcoSettings /> Settings
+              </div>
+            )}
+            <div className="user-menu-item user-menu-item-danger" onClick={logout}>
+              ⎋ Sign Out
+            </div>
           </div>
-          <div className="sidebar-user-role">{user?.role_label || user?.role}</div>
+        )}
+        <div className="sidebar-user" onClick={() => setUserMenuOpen(o => !o)}>
+          <div className="sidebar-avatar">
+            {user ? initials(`${user.first_name || ''} ${user.last_name || user.username}`) : 'U'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="sidebar-user-name"
+              style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.first_name} {user?.last_name}
+            </div>
+            <div className="sidebar-user-role">{user?.role_label || user?.role}</div>
+          </div>
+          <span className="text-muted" style={{ fontSize: 11 }}>▲</span>
         </div>
-        <button className="btn btn-ghost btn-xs" onClick={logout}
-          title="Log out" style={{ padding: '4px 6px', fontSize: '13px' }}>
-          ⎋
-        </button>
       </div>
     </aside>
   )
