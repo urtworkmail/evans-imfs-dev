@@ -221,34 +221,42 @@ body {
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 500;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 22px;
+  min-height: 40px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  border: 1px solid transparent;
-  transition: background 0.16s var(--ease), border-color 0.16s var(--ease),
+  border: none;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease),
     opacity 0.16s var(--ease), transform 0.12s var(--ease);
   white-space: nowrap;
   line-height: 1;
   font-family: inherit;
 }
-.btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn:active:not(:disabled) { transform: scale(0.97); }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-.btn-xs { padding: 3px 8px; font-size: 11px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:active:not(:disabled) { opacity: 0.75; }
+.btn-sm { padding: 8px 18px; min-height: 34px; font-size: 13px; }
+.btn-xs { padding: 6px 14px; min-height: 28px; font-size: 12px; gap: 6px; }
 
-.btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
-.btn-primary:hover:not(:disabled) { background: var(--blue-dark); border-color: var(--blue-dark); }
+/* Filled — flat solid color, no border, no shadow (iOS .filled style) */
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
 
-.btn-outline { background: var(--surface); color: var(--gray-700); border-color: var(--gray-200); }
-.btn-outline:hover:not(:disabled) { background: var(--gray-50); border-color: var(--gray-300); }
-
-.btn-danger { background: var(--red); color: #fff; border-color: var(--red); }
+.btn-danger { background: var(--red); color: #fff; }
 .btn-danger:hover:not(:disabled) { background: #b91c1c; }
 
-.btn-ghost { background: transparent; color: var(--gray-600); border-color: transparent; }
+/* Tinted — soft accent-color fill, no border (iOS .bordered/.tinted style) */
+.btn-outline { background: var(--blue-light); color: var(--blue); }
+.btn-outline:hover:not(:disabled) { background: var(--blue-mid); }
+
+/* Plain — text only, no fill (iOS .plain style). Neutral by default (used
+   for icon-only utility buttons); callers tint it (e.g. red for destructive
+   row actions) via inline style. */
+.btn-ghost { background: transparent; color: var(--gray-600); }
 .btn-ghost:hover:not(:disabled) { background: var(--gray-100); }
 
 .theme-toggle-btn {
@@ -683,11 +691,7 @@ tbody tr:hover td { background: var(--row-hover); }
 }
 .login-submit {
   width: 100%;
-  justify-content: center;
   margin-top: 18px;
-  padding: 11px;
-  border-radius: 10px;
-  font-size: 14px;
 }
 
 @media (max-width: 900px) {
