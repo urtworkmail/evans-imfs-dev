@@ -1121,11 +1121,9 @@ tbody tr:hover td { background: var(--row-hover); }
 
 /* ── Mobile-specific page adjustments ───────────────── */
 @media (max-width: 600px) {
-  /* Filters row becomes vertical stacks */
-  .filters-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  /* Filter chips wrap onto multiple lines rather than stack one-per-row
+     (flex-direction: column here previously turned every chip into its
+     own full-width row — this keeps them flowing left-to-right). */
   .filters-row > span { margin-left: 0 !important; }
 
   /* Topbar actions stack */
