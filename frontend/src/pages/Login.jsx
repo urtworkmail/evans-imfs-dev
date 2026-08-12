@@ -2,11 +2,29 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
+import logo from '../assets/logo.png'
 
 const FeatureIcon = ({ d }) => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
     strokeLinecap="round" strokeLinejoin="round">
     {d}
+  </svg>
+)
+
+const EyeIcon = ({ off }) => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+    strokeLinecap="round" strokeLinejoin="round">
+    {off ? (
+      <>
+        <path d="M17.94 17.94A10.94 10.94 0 0112 20c-5.5 0-9.5-4.5-11-8 .9-2 2.3-3.9 4.06-5.34M9.9 4.24A10.87 10.87 0 0112 4c5.5 0 9.5 4.5 11 8-.53 1.18-1.24 2.35-2.12 3.4M14.12 14.12a3 3 0 11-4.24-4.24" />
+        <line x1="1" y1="1" x2="23" y2="23" />
+      </>
+    ) : (
+      <>
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    )}
   </svg>
 )
 
@@ -28,6 +46,7 @@ const FEATURES = [
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [totpCode, setTotpCode] = useState('')
   const [needsTotp, setNeedsTotp] = useState(false)
   const [error, setError] = useState('')
@@ -66,7 +85,7 @@ export default function LoginPage() {
       {/* Left — brand panel */}
       <div className="login-brand">
         <div className="login-brand-mark">
-          <div className="login-brand-mark-icon">⛳</div>
+          <div className="login-brand-mark-icon"><img src={logo} alt="" /></div>
           Evans Golf IMFS
         </div>
 
@@ -121,14 +140,25 @@ export default function LoginPage() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">Password</label>
-                  <input
-                    className="form-input"
-                    type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                  />
+                  <div className="login-password-field">
+                    <input
+                      className="form-input"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="login-password-toggle"
+                      onClick={() => setShowPassword(s => !s)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      tabIndex={-1}
+                    >
+                      <EyeIcon off={showPassword} />
+                    </button>
+                  </div>
                 </div>
               </>
             )}
