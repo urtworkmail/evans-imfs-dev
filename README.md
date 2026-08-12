@@ -316,19 +316,22 @@ curl -I https://yourdomain.com
 # Should return HTTP/2 200
 ```
 
-#### 10. Set up daily backups (cron)
+#### 10. Backups
+
+Backups are **event-driven, not on a schedule**: every time a Shopify/QuickBooks fetch actually
+creates new orders (whether triggered by clicking "Fetch" in the UI or by the scheduled Celery
+task), the app runs `pg_dump` itself right after and keeps only the **4 most recent** backups —
+see `backend/settings_app/backup.py`. Files land in `/opt/evansimfs/backups` (mounted into the
+`backend`/`celery` containers at `/app/backups`).
+
+There's no cron job to set up. If you want a manual backup on demand (e.g. right before a risky
+deploy), run:
 
 ```bash
-mkdir -p /opt/evansimfs/backups
-chmod +x /opt/evansimfs/scripts/backup-db.sh
-
-# Add to crontab (runs at 2:00 AM daily)
-(crontab -l 2>/dev/null; echo "0 2 * * * cd /opt/evansimfs && ./scripts/backup-db.sh >> /opt/evansimfs/backups/backup.log 2>&1") | crontab -
+./scripts/backup-db.sh
 ```
 
-> ⚠️ Verify these actually produce non-empty files after the first run
-> (`ls -lh /opt/evansimfs/backups`) — a cron job silently producing 0-byte backups is worse than
-> no backup at all, because it looks like it's working.
+That uses the exact same code path (and the same keep-last-4 retention) as the automatic backups.
 
 ---
 
@@ -404,6 +407,6 @@ docker restart evansimfs-nginx-proxy-1
 - [ ] HTTPS working (`curl -I https://yourdomain.com`)
 - [ ] UFW firewall enabled (only 22, 80, 443 open)
 - [ ] SSH password auth disabled (key-only)
-- [ ] Automated daily backups running and verified non-empty (`crontab -l`, check file sizes)
+- [ ] Backups appearing after a real fetch and verified non-empty (`ls -lh /opt/evansimfs/backups`)
 - [ ] Default `admin` password changed after first login
 - [ ] `seed_data` has never been run against this environment

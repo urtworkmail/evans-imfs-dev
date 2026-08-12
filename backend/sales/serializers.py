@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import SalesOrder, SalesOrderItem, FetchLog
+from .models import SalesOrder, SalesOrderItem, FetchLog, FetchLogDetail
 
 
 class SalesOrderItemSerializer(serializers.ModelSerializer):
@@ -19,7 +19,15 @@ class SalesOrderSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class FetchLogDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FetchLogDetail
+        fields = ['id', 'level', 'message', 'created_at']
+
+
 class FetchLogSerializer(serializers.ModelSerializer):
+    details = FetchLogDetailSerializer(many=True, read_only=True)
+
     class Meta:
         model = FetchLog
         fields = '__all__'

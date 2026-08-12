@@ -142,6 +142,14 @@ PEAK_SEASON_MULTIPLIER = 1.15
 # (Settings -> Security in the UI).
 LOGIN_LIFETIME_HOURS = 24
 
+# ── Database backups ──────────────────────────────────────
+# Triggered by actual data changes (a fetch that creates new orders),
+# not a fixed schedule — see sales.views._run_fetch and
+# settings_app.backup. Mounted to the host's backups/ dir in
+# docker-compose so files survive container rebuilds.
+BACKUP_DIR = os.environ.get('BACKUP_DIR', '/app/backups')
+BACKUP_KEEP = int(os.environ.get('BACKUP_KEEP', '4'))
+
 # Forecast weighting — 3 months, must sum to 1.0
 # Month1 = most recent 30 days, Month2 = 31-60 days ago, Month3 = 61-90 days ago
 FORECAST_WEIGHT_MONTH1 = 0.50  # 50%

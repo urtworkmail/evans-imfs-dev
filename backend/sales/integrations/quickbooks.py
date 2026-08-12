@@ -23,6 +23,8 @@ from datetime import date
 from decimal import Decimal
 from django.conf import settings
 
+from .sku_lookup import NAME_TO_SKU
+
 logger = logging.getLogger(__name__)
 
 QB_TOKEN_URL = {
@@ -33,22 +35,6 @@ QB_TOKEN_URL = {
 QB_API_BASE = {
     'sandbox':    'https://sandbox-quickbooks.api.intuit.com/v3/company',
     'production': 'https://quickbooks.api.intuit.com/v3/company',
-}
-
-# ── TEMP FALLBACK: QuickBooks item name → local product SKU ─────
-# Only used when the QuickBooks item has no SKU.
-QB_NAME_TO_SKU = {
-    'Evans Bag - Navy':           'EVN-GLFBAG-NVY',
-    'Evans Bag - Black':          'EVN-GLFBAG-BLK',
-    'Evans Bag - Green':          'EVN-GLFBAG-GRN',
-    'Evans Bag - Maroon':         'EVN-GLFBAG-MAROON',
-    'Evans Bag - Carolina Blue':  'EVN-GLFBAG-CAROLINA_BLUE',
-    'Evans Bag - Light Grey':     'EVN-GLFBAG-LIGHT_GREY',
-    'Evans Bag - Forest Green':   'EVN-GLFBAG-FOREST_GREEN',
-    'Evans Bag - Red':            'EVN-GLFBAG-RED',
-    'Towel Personalization':      'EVN-DEC-TWL',
-    'Bag Personalization - Text': 'EVN-DEC-BAG-TEXT',
-    'Bag Personalization - Logo': 'EVN-DEC-BAG-LOGO',
 }
 
 
@@ -111,15 +97,17 @@ def _get_product_by_sku(sku: str):
         return None
 
 
-def fetch_orders(since_date: date, up_to_date: date) -> list:
+def fetch_orders(since_date: date, up_to_date: date) -> tuple:
     """
     Fetch QuickBooks Invoices between since_date and up_to_date.
-    Returns list of order dicts compatible with sales/views.py _run_fetch().
+    Returns (orders, log_entries) — orders is a list of dicts compatible
+    with sales/views.py _run_fetch(); log_entries is a list of
+    (level, message) tuples describing what happened, for persistence.
 
     QuickBooks Invoices = wholesale orders (channel='wholesale')
     Matching priority:
       1) Use the SKU from the QuickBooks item (ItemRef.Sku).
-      2) Fall back to a name‑based temporary mapping.
+      2) Fall back to a name‑based mapping (sales.integrations.sku_lookup).
     """
     if not settings.QB_CLIENT_ID or not settings.QB_CLIENT_SECRET:
         raise ValueError(
@@ -135,6 +123,7 @@ def fetch_orders(since_date: date, up_to_date: date) -> list:
     headers      = _qb_headers(access_token)
 
     orders = []
+    log_entries = []
     start_pos = 1
     page_size = 100
 
@@ -176,14 +165,16 @@ def fetch_orders(since_date: date, up_to_date: date) -> list:
                 # 1) Try the SKU field first (most reliable)
                 product = _get_product_by_sku(item_sku) if item_sku else None
 
-                # 2) Fall back to the temporary name‑based mapping
+                # 2) Fall back to the name‑based mapping
                 if product is None:
-                    mapped_sku = QB_NAME_TO_SKU.get(item_name)
+                    mapped_sku = NAME_TO_SKU.get(item_name)
                     if mapped_sku:
                         product = _get_product_by_sku(mapped_sku)
 
                 if product is None:
-                    logger.warning(f"QB item '{item_name}' (SKU={item_sku}) not matched — skipping")
+                    msg = f"Invoice {invoice_id}: item '{item_name}' (SKU={item_sku}) not matched — skipping"
+                    logger.warning(msg)
+                    log_entries.append(('warning', msg))
                     continue
 
                 qty        = float(detail.get('Qty', 1))
@@ -203,5 +194,7 @@ def fetch_orders(since_date: date, up_to_date: date) -> list:
             break
         start_pos += page_size
 
-    logger.info(f"QuickBooks: fetched {len(orders)} line items from {since_date} to {up_to_date}")
-    return orders
+    summary = f"QuickBooks: fetched {len(orders)} line items from {since_date} to {up_to_date}"
+    logger.info(summary)
+    log_entries.append(('info', summary))
+    return orders, log_entries

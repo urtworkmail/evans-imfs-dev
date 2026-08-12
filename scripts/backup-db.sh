@@ -1,40 +1,17 @@
 #!/bin/bash
 # ──────────────────────────────────────────────────────
-#  Greenway Golf — PostgreSQL Backup Script
+#  Evans Golf IMFS — Manual PostgreSQL Backup
 #  Usage:  ./scripts/backup-db.sh
-#  Cron:   0 2 * * * /opt/evansimfs/scripts/backup-db.sh
+#
+#  Backups are normally triggered automatically whenever a Shopify/
+#  QuickBooks fetch actually creates new orders (see
+#  backend/sales/views.py + backend/settings_app/backup.py) — there's
+#  no fixed daily schedule anymore. This script is only for a manual,
+#  on-demand backup (e.g. right before a risky deploy). It shares the
+#  exact same backup code (and the same keep-last-4 retention) as the
+#  automatic one, run inside the backend container.
 # ──────────────────────────────────────────────────────
 
 set -e
 
-BACKUP_DIR="${BACKUP_DIR:-/opt/evansimfs/backups}"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_FILE="${BACKUP_DIR}/greenway_${TIMESTAMP}.sql.gz"
-RETAIN_DAYS="${RETAIN_DAYS:-30}"
-
-# Load env
-if [ -f "$(dirname "$0")/../.env" ]; then
-  source "$(dirname "$0")/../.env"
-fi
-
-DB_NAME="${DB_NAME:-greenway_db}"
-DB_USER="${DB_USER:-greenway}"
-DB_PASSWORD="${DB_PASSWORD:-greenway_secret}"
-
-mkdir -p "$BACKUP_DIR"
-
-echo "==> Backing up database: $DB_NAME → $BACKUP_FILE"
-
-# Dump from running container
-docker compose exec -T db pg_dump \
-  -U "$DB_USER" \
-  -d "$DB_NAME" \
-  --no-owner \
-  --no-acl \
-  | gzip > "$BACKUP_FILE"
-
-echo "==> Backup complete: $(du -sh "$BACKUP_FILE" | cut -f1)"
-
-# Remove backups older than RETAIN_DAYS
-find "$BACKUP_DIR" -name "greenway_*.sql.gz" -mtime +"$RETAIN_DAYS" -delete
-echo "==> Old backups cleaned (kept last $RETAIN_DAYS days)"
+docker compose exec -T backend python manage.py backup_db

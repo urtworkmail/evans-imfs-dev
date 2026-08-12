@@ -47,3 +47,6 @@ logs/
 
 # Certbot (generated on server, never commit)
 nginx/certbot/
+
+# DB backups (generated, never commit)
+/backups/

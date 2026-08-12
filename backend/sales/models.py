@@ -44,3 +44,21 @@ class FetchLog(models.Model):
 
     def __str__(self):
         return f"{self.source} fetch at {self.fetched_at:%Y-%m-%d %H:%M}"
+
+
+class FetchLogDetail(models.Model):
+    """Per-line-item detail for a fetch — e.g. which item was skipped and
+    why. Lets a skipped/unmatched item be diagnosed after the fact instead
+    of only being visible in console output at the moment it happens."""
+    LEVEL_CHOICES = [('info', 'Info'), ('warning', 'Warning'), ('error', 'Error')]
+
+    fetch_log = models.ForeignKey(FetchLog, on_delete=models.CASCADE, related_name='details')
+    level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='info')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['id']
+
+    def __str__(self):
+        return f"[{self.level}] {self.message[:60]}"

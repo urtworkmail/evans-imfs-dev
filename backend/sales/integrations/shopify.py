@@ -11,14 +11,22 @@ Setup:
    SHOPIFY_SHOP_URL=yourshop.myshopify.com
    SHOPIFY_ACCESS_TOKEN=shpat_xxxxxxxxxxxxxxxxxx
 
-The function `fetch_orders(since_date, up_to_date)` returns a list of
-order dicts in the same format the mock generator returns — drop-in replacement.
+The function `fetch_orders(since_date, up_to_date)` returns
+(orders, log_entries) — orders in the same dict format the mock
+generator used to return, and log_entries as a list of (level, message)
+tuples for persisting to FetchLogDetail (see sales/views.py).
+
+Matching priority: SKU field first, then a name-based fallback
+(sales.integrations.sku_lookup.NAME_TO_SKU) for items with no SKU at
+all — some personalization/decoration items aren't SKU-tagged.
 """
 import requests
 import logging
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
 from django.conf import settings
+
+from .sku_lookup import NAME_TO_SKU
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +53,12 @@ def _get_product_by_sku(sku):
         return None
 
 
-def fetch_orders(since_date: date, up_to_date: date) -> list:
+def fetch_orders(since_date: date, up_to_date: date) -> tuple:
     """
     Fetch Shopify orders between since_date and up_to_date.
-    Returns list of order dicts compatible with sales/views.py _run_fetch().
+    Returns (orders, log_entries) — orders is a list of dicts compatible
+    with sales/views.py _run_fetch(); log_entries is a list of
+    (level, message) tuples describing what happened, for persistence.
     Raises requests.HTTPError on API failure.
     """
     if not settings.SHOPIFY_SHOP_URL or not settings.SHOPIFY_ACCESS_TOKEN:
@@ -57,13 +67,14 @@ def fetch_orders(since_date: date, up_to_date: date) -> list:
         )
 
     orders = []
+    log_entries = []
     url    = f"{_shopify_base_url()}/orders.json"
     params = {
         'status':          'any',
         'created_at_min':  f"{since_date}T00:00:00Z",
         'created_at_max':  f"{up_to_date}T23:59:59Z",
         'limit':           250,
-        'fields':          'id,created_at,line_items,financial_status,total_price',
+        'fields':          'id,name,created_at,line_items,financial_status,total_price',
     }
 
     while url:
@@ -74,21 +85,33 @@ def fetch_orders(since_date: date, up_to_date: date) -> list:
         raw_orders = data.get('orders', [])
 
         for order in raw_orders:
-            order_date = order['created_at'][:10]  # YYYY-MM-DD
-            total_rev  = Decimal(order.get('total_price', '0'))
+            order_date  = order['created_at'][:10]  # YYYY-MM-DD
+            order_label = order.get('name') or order['id']
 
             for item in order.get('line_items', []):
-                sku     = item.get('sku', '')
-                product = _get_product_by_sku(sku)
-                if not product:
-                    logger.warning(f"Shopify SKU '{sku}' not found in local products — skipping")
+                sku       = item.get('sku') or ''
+                item_name = item.get('name') or item.get('title') or ''
+                product   = _get_product_by_sku(sku) if sku else None
+
+                # Fallback: some items (personalization add-ons, and at
+                # least one bag variant) have no SKU set in Shopify at all.
+                if product is None and item_name in NAME_TO_SKU:
+                    product = _get_product_by_sku(NAME_TO_SKU[item_name])
+
+                if product is None:
+                    msg = f"Order {order_label}: item '{item_name}' (SKU='{sku}') not matched — skipping"
+                    logger.warning(msg)
+                    log_entries.append(('warning', msg))
                     continue
 
                 qty        = int(item.get('quantity', 1))
                 unit_price = Decimal(str(item.get('price', '0')))
 
                 orders.append({
-                    'external_id':  str(order['id']) + f"_{sku}",
+                    # item['id'] (Shopify's own line-item id) keeps this
+                    # unique even when two items on the same order both
+                    # have a blank SKU — using sku alone would collide.
+                    'external_id':  f"{order['id']}_{item['id']}",
                     'order_date':   date.fromisoformat(order_date),
                     'channel':      'DTC',
                     'product':      product,
@@ -107,5 +130,7 @@ def fetch_orders(since_date: date, up_to_date: date) -> list:
                     url = part.split(';')[0].strip().strip('<>')
                     break
 
-    logger.info(f"Shopify: fetched {len(orders)} line items from {since_date} to {up_to_date}")
-    return orders
+    summary = f"Shopify: fetched {len(orders)} line items from {since_date} to {up_to_date}"
+    logger.info(summary)
+    log_entries.append(('info', summary))
+    return orders, log_entries

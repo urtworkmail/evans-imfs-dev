@@ -1,3 +1,4 @@
+import logging
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -7,7 +8,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from collections import defaultdict
 
-from .models import SalesOrder, SalesOrderItem, FetchLog
+from .models import SalesOrder, SalesOrderItem, FetchLog, FetchLogDetail
 from .serializers import SalesOrderSerializer, FetchLogSerializer
 from inventory.models import FabricStock, FinishedGoodsInventory
 
@@ -52,7 +53,7 @@ def _run_fetch(source):
                     "Shopify not configured. Set SHOPIFY_SHOP_URL and SHOPIFY_ACCESS_TOKEN in .env"
                 )
             from .integrations.shopify import fetch_orders
-            raw_orders = fetch_orders(since, up_to)
+            raw_orders, log_entries = fetch_orders(since, up_to)
         else:
             if not (settings.QB_CLIENT_ID and settings.QB_CLIENT_SECRET and settings.QB_REALM_ID):
                 raise ValueError(
@@ -60,7 +61,7 @@ def _run_fetch(source):
                     "QB_REALM_ID, QB_REFRESH_TOKEN in .env"
                 )
             from .integrations.quickbooks import fetch_orders
-            raw_orders = fetch_orders(since, up_to)
+            raw_orders, log_entries = fetch_orders(since, up_to)
     except Exception as exc:
         FetchLog.objects.create(
             source=source, orders_fetched=0, status='error', message=str(exc)
@@ -106,11 +107,28 @@ def _run_fetch(source):
 
             created_count += 1
 
-    FetchLog.objects.create(
+    log = FetchLog.objects.create(
         source=source, orders_fetched=created_count,
         status='success',
         message=f"[{mode.upper()}] {created_count} new orders from {since} to {up_to}.",
     )
+    FetchLogDetail.objects.bulk_create([
+        FetchLogDetail(fetch_log=log, level=level, message=message)
+        for level, message in log_entries
+    ])
+
+    if created_count > 0:
+        def _backup():
+            try:
+                from settings_app.backup import run_backup
+                run_backup(reason=f"{source} fetch created {created_count} orders")
+            except Exception as exc:
+                # Backup failing shouldn't fail the fetch itself — just log it.
+                logging.getLogger(__name__).error(f"Post-fetch backup failed: {exc}")
+        # Run only after this transaction actually commits — otherwise
+        # pg_dump (a separate DB connection) would run before the new
+        # orders are visible and back up stale data.
+        transaction.on_commit(_backup)
 
     return Response({
         'status':         'success',
