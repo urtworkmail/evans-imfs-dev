@@ -100,8 +100,13 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME':  timedelta(hours=8),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS':  True,
+    # Default/fallback only — the actual login session length is set per-login
+    # in users.auth_views from the admin-configurable "login_lifetime_hours"
+    # system setting (default 24h). Rotation is off so that value is a real,
+    # fixed deadline from the moment of login, not something that quietly
+    # extends every time the app refreshes the access token.
+    'REFRESH_TOKEN_LIFETIME': timedelta(hours=24),
+    'ROTATE_REFRESH_TOKENS':  False,
 }
 
 _cors = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:8080,http://127.0.0.1:8080')
@@ -131,6 +136,11 @@ OVERSTOCK_DAYS         = 90
 SAFETY_BUFFER_DAYS     = 14
 PEAK_SEASON_MONTHS     = [4, 5, 6, 7, 8, 9]
 PEAK_SEASON_MULTIPLIER = 1.15
+
+# How long a login session lasts before requiring re-authentication.
+# Overridable at runtime via the SystemSetting 'login_lifetime_hours'
+# (Settings -> Security in the UI).
+LOGIN_LIFETIME_HOURS = 24
 
 # Forecast weighting — 3 months, must sum to 1.0
 # Month1 = most recent 30 days, Month2 = 31-60 days ago, Month3 = 61-90 days ago

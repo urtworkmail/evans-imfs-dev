@@ -33,6 +33,7 @@ export default function Settings() {
     forecast_weight_month1:  '50',
     forecast_weight_month2:  '30',
     forecast_weight_month3:  '20',
+    login_lifetime_hours:    '24',
   })
   const [creds, setCreds] = useState({
     shopify_shop_url:     '',
@@ -69,6 +70,7 @@ export default function Settings() {
             forecast_weight_month1: d.forecast_weight_month1 || prev.forecast_weight_month1,
             forecast_weight_month2: d.forecast_weight_month2 || prev.forecast_weight_month2,
             forecast_weight_month3: d.forecast_weight_month3 || prev.forecast_weight_month3,
+            login_lifetime_hours:   d.login_lifetime_hours   || prev.login_lifetime_hours,
           }))
           setCreds(prev => ({
             ...prev,
@@ -411,6 +413,24 @@ export default function Settings() {
       {/* ── SECURITY / TOTP ── */}
       {tab === 'security' && (
         <div className="card card-pad">
+          <div className="section-title">Login Session Length</div>
+          <p style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 16 }}>
+            How long a login lasts before requiring username/password (and the authentication
+            code, for admins with 2FA enabled) again.
+          </p>
+          <div className="form-group" style={{ maxWidth: 220 }}>
+            <label className="form-label">Session length (hours)</label>
+            <input className="form-input" type="number" min="1" max="720"
+              value={system.login_lifetime_hours}
+              onChange={e => setSystem({ ...system, login_lifetime_hours: e.target.value })} />
+            <div className="form-hint">Default 24. Applies to logins from the moment they happen.</div>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={saveSystem} disabled={saving}>
+            {saving ? 'Saving…' : 'Save Session Length'}
+          </button>
+
+          <div className="separator" />
+
           <div className="section-title">Two-Factor Authentication</div>
           <p style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 20 }}>
             Adds a second step to login using a standard authenticator app (Google Authenticator,
