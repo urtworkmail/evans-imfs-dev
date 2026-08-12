@@ -123,6 +123,22 @@ export default function Sidebar() {
             </div>
           )
         })}
+
+        {/* Account actions — mobile only (desktop uses the popover below).
+            The popover can't work on mobile: the sidebar becomes a fixed
+            top bar there, so a menu that opens "upward" from it would
+            render off the top of the screen. */}
+        <div className="sidebar-mobile-account">
+          <div className="sidebar-section-label">Account</div>
+          {user?.role === 'admin' && (
+            <div className="sidebar-link" onClick={() => handleNav('/settings')}>
+              <IcoSettings /> Settings
+            </div>
+          )}
+          <div className="sidebar-link" style={{ color: 'var(--red)' }} onClick={logout}>
+            ⎋ Sign Out
+          </div>
+        </div>
       </nav>
 
       {/* User area — click to open account menu */}

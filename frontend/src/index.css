@@ -170,6 +170,8 @@ body {
 }
 
 .sidebar-nav { flex: 1; padding: 6px 0; }
+/* Desktop uses the account popover instead — see mobile override below. */
+.sidebar-mobile-account { display: none; }
 
 .sidebar-section-label {
   padding: 12px 16px 3px;
@@ -915,13 +917,17 @@ tbody tr:hover td { background: var(--row-hover); }
   .sidebar-section-label { padding: 10px 20px 2px; }
   .sidebar-link          { padding: 10px 20px; font-size: 14px; }
 
-  /* User area becomes hamburger button area */
-  .sidebar-user {
-    border-top: none;
-    padding: 0 12px;
-    gap: 6px;
+  /* The account popover can't work here — the sidebar is a fixed top bar
+     on mobile, so a menu opening "upward" from it renders off-screen.
+     Hide the trigger row and surface the same actions in the nav drawer
+     instead (see .sidebar-mobile-account). */
+  .sidebar-user-wrap { display: none; }
+  .sidebar-mobile-account {
+    display: block;
+    border-top: 1px solid var(--gray-200);
+    margin-top: 6px;
+    padding-top: 6px;
   }
-  .sidebar-user-name, .sidebar-user-role { display: none; }
 
   /* Hamburger button — shown on mobile */
   .hamburger-btn {
@@ -968,13 +974,13 @@ tbody tr:hover td { background: var(--row-hover); }
   table       { min-width: 600px; }
   th, td      { padding: 8px 10px; font-size: 12px; }
 
-  /* Filters row wraps */
-  .filters-row { gap: 6px; }
-  .filter-chip { font-size: 11px; padding: 4px 10px; }
+  /* Filters row wraps rather than shrinking chips below a comfortable
+     touch size */
+  .filters-row { gap: 8px; }
 
   /* Modal full-screen on tablet */
   .modal-backdrop { padding: 12px; align-items: flex-end; }
-  .modal          { max-width: 100%; max-height: 92vh; border-radius: 12px 12px 0 0; }
+  .modal          { max-width: 100%; max-height: 92vh; border-radius: 16px 16px 0 0; }
   .modal-lg       { max-width: 100%; }
 
   /* Card padding reduced */
@@ -998,18 +1004,16 @@ tbody tr:hover td { background: var(--row-hover); }
   /* Page content */
   .page-content  { padding: 12px; }
 
-  /* Tabs scroll horizontally */
+  /* Tabs scroll horizontally rather than shrink below a comfortable
+     touch size */
   .tabs {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     flex-wrap: nowrap;
+    gap: 16px;
     padding-bottom: 1px;
   }
-  .tab-btn { white-space: nowrap; padding: 8px 12px; font-size: 12px; }
-
-  /* Buttons */
-  .btn    { font-size: 12px; padding: 6px 12px; }
-  .btn-sm { font-size: 11px; padding: 5px 9px; }
+  .tab-btn { white-space: nowrap; }
 
   /* Table min-width smaller on phone */
   table { min-width: 480px; }
@@ -1017,12 +1021,13 @@ tbody tr:hover td { background: var(--row-hover); }
   /* Alert banners */
   .alert-banner { font-size: 12px; padding: 10px 12px; }
 
-  /* Modal */
+  /* Modal — close button sized up for touch */
   .modal-body    { padding: 16px; }
   .modal-header  { padding: 14px 16px 12px; }
+  .modal-close   { width: 32px; height: 32px; }
 
   /* Section title */
-  .section-title { font-size: 13px; }
+  .section-title { font-size: 15px; }
 
   /* Page header stack */
   .page-header {
@@ -1143,7 +1148,7 @@ tbody tr:hover td { background: var(--row-hover); }
   /* Modal wider on small phone */
   .modal-backdrop { padding: 0; }
   .modal {
-    border-radius: 12px 12px 0 0;
+    border-radius: 16px 16px 0 0;
     max-height: 95vh;
     width: 100%;
   }
@@ -1164,8 +1169,6 @@ tbody tr:hover td { background: var(--row-hover); }
     width: 100%;
     min-width: 0;
   }
-  /* Topbar hidden on mobile (sidebar IS the topbar) */
-  .topbar { display: none; }
 
   /* Page content starts right away */
   .page-content { padding-top: 16px; }
