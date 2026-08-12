@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import Sidebar from './components/Sidebar'
-import ThemeToggle from './components/ThemeToggle'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Inventory from './pages/Inventory'
@@ -63,11 +62,6 @@ function AppLayout() {
     <div className="app-shell">
       <Sidebar />
       <div className="main-area">
-        <div className="topbar">
-          <div className="topbar-actions">
-            <ThemeToggle />
-          </div>
-        </div>
         <div className="page-content">
           <div className="page-header">
             <div>

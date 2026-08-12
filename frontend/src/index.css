@@ -62,7 +62,6 @@
   --ring-error: 0 0 0 4px rgba(240,68,56,0.24);
 
   --sidebar-w: 280px;
-  --topbar-h: 52px;
   --radius: 12px;
   --radius-sm: 8px;
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -277,19 +276,6 @@ body {
   overflow: hidden;
   min-width: 0;
 }
-
-.topbar {
-  height: var(--topbar-h);
-  background: var(--surface);
-  border-bottom: 1px solid var(--gray-200);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  flex-shrink: 0;
-  transition: background-color 0.25s var(--ease), border-color 0.25s var(--ease);
-}
-.topbar-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; }
 
 .page-content {
   flex: 1;
@@ -946,12 +932,6 @@ tbody tr:hover td { background: var(--row-hover); }
   /* Main area pushes down to account for top sidebar */
   .main-area { padding-top: 52px; }
 
-  /* Topbar */
-  .topbar {
-    padding: 0 16px;
-    height: 44px;
-  }
-
   /* Page content */
   .page-content { padding: 16px; }
 
@@ -1125,15 +1105,6 @@ tbody tr:hover td { background: var(--row-hover); }
      (flex-direction: column here previously turned every chip into its
      own full-width row — this keeps them flowing left-to-right). */
   .filters-row > span { margin-left: 0 !important; }
-
-  /* Topbar actions stack */
-  .topbar {
-    flex-wrap: wrap;
-    height: auto;
-    min-height: 52px;
-    padding: 8px 16px;
-    gap: 8px;
-  }
 
   /* Sales date range row */
   .sales-date-row {

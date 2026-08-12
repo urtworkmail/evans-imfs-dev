@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { initials } from '../utils/fmt'
 
 const Icon = ({ d, size = 14 }) => (
@@ -22,6 +23,8 @@ const IcoComparison = () => <Icon d={<><line x1="18" y1="20" x2="18" y2="10"/><l
 const IcoUsers      = () => <Icon d={<><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />
 const IcoSettings   = () => <Icon d={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></>} />
 const IcoChevronUp  = () => <Icon d={<polyline points="18 15 12 9 6 15"/>} size={12} />
+const IcoSun        = () => <Icon d={<><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.22 4.22l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.22 19.78l1.41-1.41M17.66 6.34l1.41-1.41"/></>} />
+const IcoMoon       = () => <Icon d={<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>} />
 
 const NAV = [
   { section: 'Overview', items: [
@@ -51,6 +54,7 @@ export default function Sidebar() {
   const navigate       = useNavigate()
   const location       = useLocation()
   const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const [open, setOpen]  = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const navRef            = useRef(null)
@@ -130,11 +134,9 @@ export default function Sidebar() {
             render off the top of the screen. */}
         <div className="sidebar-mobile-account">
           <div className="sidebar-section-label">Account</div>
-          {user?.role === 'admin' && (
-            <div className="sidebar-link" onClick={() => handleNav('/settings')}>
-              <IcoSettings /> Settings
-            </div>
-          )}
+          <div className="sidebar-link" onClick={toggleTheme}>
+            {theme === 'dark' ? <IcoSun /> : <IcoMoon />} {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          </div>
           <div className="sidebar-link" style={{ color: 'var(--red)' }} onClick={logout}>
             ⎋ Sign Out
           </div>
@@ -156,11 +158,9 @@ export default function Sidebar() {
                 <div className="text-muted" style={{ fontSize: 12 }}>{user?.role_label || user?.role}</div>
               </div>
             </div>
-            {user?.role === 'admin' && (
-              <div className="user-menu-item" onClick={() => handleNav('/settings')}>
-                <IcoSettings /> Settings
-              </div>
-            )}
+            <div className="user-menu-item" onClick={toggleTheme}>
+              {theme === 'dark' ? <IcoSun /> : <IcoMoon />} {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </div>
             <div className="user-menu-item user-menu-item-danger" onClick={logout}>
               ⎋ Sign Out
             </div>
