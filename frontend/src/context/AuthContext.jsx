@@ -24,8 +24,8 @@ export function AuthProvider({ children }) {
     else setLoading(false)
   }, [fetchMe])
 
-  const login = async (username, password) => {
-    const { data } = await authApi.login(username, password)
+  const login = async (username, password, totpCode) => {
+    const { data } = await authApi.login(username, password, totpCode)
     localStorage.setItem('access_token', data.access)
     localStorage.setItem('refresh_token', data.refresh)
     await fetchMe()
@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
   const hasPermission = (key) => !!user?.effective_permissions?.includes(key)
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission, refreshUser: fetchMe }}>
       {children}
     </AuthContext.Provider>
   )

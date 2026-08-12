@@ -28,6 +28,8 @@ const FEATURES = [
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [totpCode, setTotpCode] = useState('')
+  const [needsTotp, setNeedsTotp] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
@@ -38,13 +40,25 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
     try {
-      await login(username, password)
+      await login(username, password, needsTotp ? totpCode : undefined)
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid username or password.')
+      if (err.response?.data?.detail === 'totp_required') {
+        setNeedsTotp(true)
+        setError(totpCode ? 'Invalid authentication code. Try again.' : '')
+        setTotpCode('')
+      } else {
+        setError(err.response?.data?.detail || 'Invalid username or password.')
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  const backToPassword = () => {
+    setNeedsTotp(false)
+    setTotpCode('')
+    setError('')
   }
 
   return (
@@ -82,42 +96,78 @@ export default function LoginPage() {
 
         <div className="login-form-wrap">
           <div className="login-form-header">
-            <div className="login-form-title">Welcome back</div>
-            <div className="login-form-sub">Sign in to your Evans Golf IMFS account</div>
+            <div className="login-form-title">{needsTotp ? 'Two-factor authentication' : 'Welcome back'}</div>
+            <div className="login-form-sub">
+              {needsTotp
+                ? 'Enter the 6-digit code from your authenticator app'
+                : 'Sign in to your Evans Golf IMFS account'}
+            </div>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">Username</label>
-              <input
-                className="form-input"
-                type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                placeholder="e.g. admin"
-                autoFocus
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <input
-                className="form-input"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </div>
+            {!needsTotp && (
+              <>
+                <div className="form-group">
+                  <label className="form-label">Username</label>
+                  <input
+                    className="form-input"
+                    type="text"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    placeholder="e.g. admin"
+                    autoFocus
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <input
+                    className="form-input"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+              </>
+            )}
+
+            {needsTotp && (
+              <div className="form-group">
+                <label className="form-label">Authentication code</label>
+                <input
+                  className="form-input"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={totpCode}
+                  onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="123456"
+                  autoFocus
+                  required
+                />
+              </div>
+            )}
+
             {error && <div className="login-error">{error}</div>}
             <button
               type="submit"
               className="btn btn-primary login-submit"
               disabled={loading}
             >
-              {loading ? 'Signing in…' : 'Sign In'}
+              {loading ? 'Signing in…' : needsTotp ? 'Verify' : 'Sign In'}
             </button>
+            {needsTotp && (
+              <button
+                type="button"
+                className="link-btn"
+                style={{ display: 'block', margin: '14px auto 0' }}
+                onClick={backToPassword}
+              >
+                ← Back
+              </button>
+            )}
           </form>
         </div>
       </div>

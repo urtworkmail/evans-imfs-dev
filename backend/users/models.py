@@ -15,6 +15,9 @@ class User(AbstractUser):
     role             = models.CharField(max_length=30, choices=ROLE_CHOICES, default='viewer')
     # Stores {permission_key: True/False} — overrides the persona defaults
     permissions_json = models.JSONField(default=dict, blank=True)
+    # TOTP two-factor auth — self-hosted (pyotp), no third-party MFA service
+    totp_secret      = models.CharField(max_length=64, blank=True, null=True)
+    totp_enabled     = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'users'

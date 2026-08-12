@@ -35,8 +35,14 @@ api.interceptors.response.use(
 )
 
 export const authApi = {
-  login: (username, password) => api.post('/auth/token/', { username, password }),
+  login: (username, password, totp_code) => api.post('/auth/token/', { username, password, totp_code }),
   me: () => api.get('/users/me/'),
+}
+
+export const totpApi = {
+  setup:   () => api.post('/users/totp_setup/'),
+  verify:  (code) => api.post('/users/totp_verify/', { code }),
+  disable: (password) => api.post('/users/totp_disable/', { password }),
 }
 
 export const productsApi = {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { settingsApi } from '../api/client'
+import { settingsApi, totpApi } from '../api/client'
+import { useAuth } from '../context/AuthContext'
 import { Spinner, AlertBanner, Tabs } from '../components/UI'
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
@@ -7,6 +8,7 @@ const TABS = [
   { key: 'schedule',     label: 'Fetch Schedule'        },
   { key: 'parameters',   label: 'Inventory Parameters'  },
   { key: 'integrations', label: 'API Integrations'      },
+  { key: 'security',     label: 'Security'               },
 ]
 
 // Derived helper — safe outside render
@@ -19,6 +21,7 @@ function weightTotal(system) {
 }
 
 export default function Settings() {
+  const { user, refreshUser } = useAuth()
   const [tab,      setTab]      = useState('schedule')
   const [schedule, setSchedule] = useState({
     frequency: 'daily', day_of_week: null, time: '06:00', is_active: true,
@@ -43,6 +46,14 @@ export default function Settings() {
   const [loading, setLoading] = useState(true)
   const [saving,  setSaving]  = useState(false)
   const [msg,     setMsg]     = useState(null)
+
+  // ── TOTP / 2FA ──
+  const [totpSetup,     setTotpSetup]     = useState(null)  // { secret, qr_code } while enrolling
+  const [totpCode,      setTotpCode]      = useState('')
+  const [totpBusy,      setTotpBusy]      = useState(false)
+  const [totpError,     setTotpError]     = useState('')
+  const [disablePwd,    setDisablePwd]    = useState('')
+  const [showDisable,   setShowDisable]   = useState(false)
 
   useEffect(() => {
     Promise.all([settingsApi.getSchedule(), settingsApi.getSystem()])
@@ -99,6 +110,45 @@ export default function Settings() {
     try   { await settingsApi.saveSystem(creds); showMsg('API credentials saved.') }
     catch { showMsg('Error saving credentials.', 'error') }
     finally { setSaving(false) }
+  }
+
+  const startTotpSetup = async () => {
+    setTotpBusy(true); setTotpError('')
+    try {
+      const { data } = await totpApi.setup()
+      setTotpSetup(data)
+      setTotpCode('')
+    } catch {
+      setTotpError('Failed to start setup. Try again.')
+    } finally { setTotpBusy(false) }
+  }
+
+  const confirmTotpSetup = async () => {
+    setTotpBusy(true); setTotpError('')
+    try {
+      await totpApi.verify(totpCode)
+      setTotpSetup(null)
+      setTotpCode('')
+      await refreshUser()
+      showMsg('Two-factor authentication enabled.')
+    } catch (e) {
+      setTotpError(e.response?.data?.detail || 'Invalid code.')
+    } finally { setTotpBusy(false) }
+  }
+
+  const cancelTotpSetup = () => { setTotpSetup(null); setTotpCode(''); setTotpError('') }
+
+  const disableTotp = async () => {
+    setTotpBusy(true); setTotpError('')
+    try {
+      await totpApi.disable(disablePwd)
+      setShowDisable(false)
+      setDisablePwd('')
+      await refreshUser()
+      showMsg('Two-factor authentication disabled.')
+    } catch (e) {
+      setTotpError(e.response?.data?.detail || 'Incorrect password.')
+    } finally { setTotpBusy(false) }
   }
 
   if (loading) return <Spinner />
@@ -355,6 +405,90 @@ export default function Settings() {
             For production, set them as environment variables in your <code>.env</code> file instead —
             environment variables always take priority over database values.
           </div>
+        </div>
+      )}
+
+      {/* ── SECURITY / TOTP ── */}
+      {tab === 'security' && (
+        <div className="card card-pad">
+          <div className="section-title">Two-Factor Authentication</div>
+          <p style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 20 }}>
+            Adds a second step to login using a standard authenticator app (Google Authenticator,
+            Authy, 1Password, etc). Generated and verified entirely on this server — no third-party
+            service involved. Available for admin accounts.
+          </p>
+
+          {user?.role !== 'admin' ? (
+            <AlertBanner type="info">Two-factor authentication is only available for admin accounts.</AlertBanner>
+          ) : totpError && <AlertBanner type="critical">{totpError}</AlertBanner>}
+
+          {user?.role === 'admin' && !user?.totp_enabled && !totpSetup && (
+            <button className="btn btn-primary btn-sm" onClick={startTotpSetup} disabled={totpBusy}>
+              {totpBusy ? 'Starting…' : 'Enable Two-Factor Authentication'}
+            </button>
+          )}
+
+          {totpSetup && (
+            <div>
+              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start', marginBottom: 16 }}>
+                <img src={totpSetup.qr_code} alt="TOTP QR code" width={160} height={160}
+                  style={{ borderRadius: 8, border: '1px solid var(--gray-200)' }} />
+                <div style={{ flex: 1, minWidth: 220 }}>
+                  <div style={{ fontSize: 13, marginBottom: 8 }}>
+                    1. Scan this QR code with your authenticator app.
+                  </div>
+                  <div style={{ fontSize: 13, marginBottom: 8 }}>
+                    Or enter this key manually:
+                  </div>
+                  <div className="sku-cell" style={{ fontSize: 13, background: 'var(--gray-100)', padding: '6px 10px', borderRadius: 6, display: 'inline-block', marginBottom: 12 }}>
+                    {totpSetup.secret}
+                  </div>
+                  <div className="form-group" style={{ marginTop: 8, maxWidth: 200 }}>
+                    <label className="form-label">2. Enter the 6-digit code</label>
+                    <input className="form-input" type="text" inputMode="numeric" autoFocus
+                      value={totpCode}
+                      onChange={e => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="123456" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="btn btn-primary btn-sm" onClick={confirmTotpSetup} disabled={totpBusy || totpCode.length !== 6}>
+                      {totpBusy ? 'Verifying…' : 'Confirm & Enable'}
+                    </button>
+                    <button className="btn btn-outline btn-sm" onClick={cancelTotpSetup} disabled={totpBusy}>Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {user?.role === 'admin' && user?.totp_enabled && !totpSetup && (
+            <div>
+              <div style={{ marginBottom: 14 }}>
+                <span className="badge badge-healthy">Enabled</span>
+              </div>
+              {!showDisable ? (
+                <button className="btn btn-outline btn-sm" onClick={() => setShowDisable(true)}>
+                  Disable Two-Factor Authentication
+                </button>
+              ) : (
+                <div style={{ maxWidth: 300 }}>
+                  <div className="form-group">
+                    <label className="form-label">Confirm your password to disable</label>
+                    <input className="form-input" type="password" autoFocus
+                      value={disablePwd} onChange={e => setDisablePwd(e.target.value)} />
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="btn btn-danger btn-sm" onClick={disableTotp} disabled={totpBusy || !disablePwd}>
+                      {totpBusy ? 'Disabling…' : 'Confirm Disable'}
+                    </button>
+                    <button className="btn btn-outline btn-sm" onClick={() => { setShowDisable(false); setDisablePwd(''); setTotpError('') }} disabled={totpBusy}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

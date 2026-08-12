@@ -11,3 +11,5 @@ django-celery-beat==2.6.0
 requests==2.31.0
 intuit-oauth
 python-quickbooks
+pyotp==2.9.0
+qrcode[pil]==7.4.2

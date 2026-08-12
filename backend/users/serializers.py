@@ -14,7 +14,9 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name',
             'role', 'role_label', 'permissions_json',
             'effective_permissions', 'is_active', 'date_joined', 'password',
+            'totp_enabled',
         ]
+        read_only_fields = ['totp_enabled']
 
     def get_effective_permissions(self, obj):
         return list(obj.get_effective_permissions())
