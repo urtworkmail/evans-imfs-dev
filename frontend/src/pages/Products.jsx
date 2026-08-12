@@ -196,16 +196,16 @@ export default function Products() {
               </select>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 20, marginBottom: 8 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, cursor: 'pointer' }}>
-              <input type="checkbox" checked={form.is_limited_edition}
-                onChange={e => setForm({ ...form, is_limited_edition: e.target.checked })} />
+          <div style={{ display: 'flex', gap: 28, marginBottom: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer' }}>
               Limited Edition
+              <input className="ios-switch" type="checkbox" checked={form.is_limited_edition}
+                onChange={e => setForm({ ...form, is_limited_edition: e.target.checked })} />
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, cursor: 'pointer' }}>
-              <input type="checkbox" checked={form.active}
-                onChange={e => setForm({ ...form, active: e.target.checked })} />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, cursor: 'pointer' }}>
               Active
+              <input className="ios-switch" type="checkbox" checked={form.active}
+                onChange={e => setForm({ ...form, active: e.target.checked })} />
             </label>
           </div>
           <div className="form-row">

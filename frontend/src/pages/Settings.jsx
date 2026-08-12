@@ -203,10 +203,10 @@ export default function Settings() {
             )}
           </div>
           <div className="form-group">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
-              <input type="checkbox" checked={!!schedule.is_active}
-                onChange={e => setSchedule({ ...schedule, is_active: e.target.checked })} />
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 280, fontSize: 13, cursor: 'pointer' }}>
               Scheduled fetch active
+              <input className="ios-switch" type="checkbox" checked={!!schedule.is_active}
+                onChange={e => setSchedule({ ...schedule, is_active: e.target.checked })} />
             </label>
           </div>
           <button className="btn btn-primary btn-sm" onClick={saveSchedule} disabled={saving}>

@@ -286,9 +286,9 @@ export default function UserManagement() {
                 </div>
               </div>
               <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={form.is_active} onChange={e => setForm({ ...form, is_active: e.target.checked })} />
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: 280, fontSize: 13, cursor: 'pointer' }}>
                   Account active
+                  <input className="ios-switch" type="checkbox" checked={form.is_active} onChange={e => setForm({ ...form, is_active: e.target.checked })} />
                 </label>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
