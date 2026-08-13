@@ -6,6 +6,15 @@ export const fmtNum = (n, dec = 0) =>
 
 export const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
+export const fmtDateTime = (d) => d ? new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'
+
+export const deviceLabel = (ua = '') => {
+  if (!ua) return 'Unknown device'
+  const os = /iPhone|iPad/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'macOS' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : ''
+  const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser'
+  return [browser, os].filter(Boolean).join(' on ') || 'Unknown device'
+}
+
 export const initials = (name = '') =>
   name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2)
 

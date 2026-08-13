@@ -15,6 +15,7 @@ import Sales from './pages/Sales'
 import Forecast from './pages/Forecast'
 import Comparison from './pages/Comparison'
 import UserManagement from './pages/UserManagement'
+import Sessions from './pages/Sessions'
 import Settings from './pages/Settings'
 
 const PAGE_META = {
@@ -28,6 +29,7 @@ const PAGE_META = {
   '/forecast':        { title: 'Forecasting',          subtitle: 'Demand projections and fabric consumption.' },
   '/comparison':      { title: 'Comparison Analysis', subtitle: 'Compare sales performance across two periods.' },
   '/users':           { title: 'User Management',     subtitle: 'Manage accounts, roles, and permissions.' },
+  '/sessions':        { title: 'Active Sessions',     subtitle: 'Devices currently logged in across the platform.' },
   '/settings':        { title: 'Settings',              subtitle: 'Fetch schedule, inventory parameters, integrations, and security.' },
 }
 
@@ -82,6 +84,7 @@ function AppLayout() {
               <Route path="/forecast"        element={<Forecast />} />
               <Route path="/comparison"      element={<Comparison />} />
               <Route path="/users"           element={<RequireAdmin><UserManagement /></RequireAdmin>} />
+              <Route path="/sessions"        element={<RequireAdmin><Sessions /></RequireAdmin>} />
               <Route path="/settings"        element={<RequireAdmin><Settings /></RequireAdmin>} />
               <Route path="*"               element={<Navigate to="/" replace />} />
             </Routes>

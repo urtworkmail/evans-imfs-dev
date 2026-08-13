@@ -7,7 +7,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.conf import settings
-from .models import User
+from django.utils import timezone
+from .models import User, LoginSession
 from .serializers import UserSerializer
 
 
@@ -100,3 +101,32 @@ class UserViewSet(viewsets.ModelViewSet):
         request.user.totp_enabled = False
         request.user.save(update_fields=['totp_secret', 'totp_enabled'])
         return Response({'detail': 'Two-factor authentication disabled.'})
+
+    @action(detail=False, methods=['get'])
+    def sessions(self, request):
+        """Active logins across all users — Super Admin only (default IsAdmin)."""
+        now = timezone.now()
+        qs = (LoginSession.objects
+              .filter(revoked_at__isnull=True, expires_at__gt=now)
+              .select_related('user'))
+        data = [{
+            'id':         s.id,
+            'username':   s.user.username,
+            'full_name':  f"{s.user.first_name} {s.user.last_name}".strip() or s.user.username,
+            'role':       s.user.get_role_display(),
+            'ip_address': s.ip_address,
+            'user_agent': s.user_agent,
+            'created_at': s.created_at,
+            'expires_at': s.expires_at,
+            'is_you':     s.user_id == request.user.id,
+        } for s in qs]
+        return Response({'total_active': len(data), 'sessions': data})
+
+    @action(detail=False, methods=['post'])
+    def revoke_session(self, request):
+        """Ends a specific login early (e.g. a lost/stolen device)."""
+        session_id = request.data.get('session_id')
+        updated = LoginSession.objects.filter(id=session_id, revoked_at__isnull=True).update(revoked_at=timezone.now())
+        if not updated:
+            return Response({'detail': 'Session not found or already ended.'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'detail': 'Session ended.'})

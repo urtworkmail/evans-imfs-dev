@@ -53,3 +53,26 @@ class User(AbstractUser):
 
     def has_perm_key(self, key: str) -> bool:
         return key in self.get_effective_permissions()
+
+
+class LoginSession(models.Model):
+    """
+    One row per issued login (refresh token). Lets Super Admin see who's
+    currently logged in — count + per-device detail — and end a session
+    early. Not a cache of live activity: "active" just means the token
+    hasn't expired or been revoked yet.
+    """
+    user         = models.ForeignKey(User, on_delete=models.CASCADE, related_name='login_sessions')
+    jti          = models.CharField(max_length=64, unique=True)
+    ip_address   = models.GenericIPAddressField(null=True, blank=True)
+    user_agent   = models.CharField(max_length=300, blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    expires_at   = models.DateTimeField()
+    revoked_at   = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'login_sessions'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} @ {self.created_at:%Y-%m-%d %H:%M}"

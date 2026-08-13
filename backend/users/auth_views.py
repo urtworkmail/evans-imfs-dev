@@ -2,12 +2,24 @@ from datetime import timedelta
 
 import pyotp
 from django.conf import settings
-from rest_framework import serializers
+from django.utils import timezone
+from rest_framework import serializers, status
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 from django.contrib.auth.models import update_last_login
 from rest_framework_simplejwt.serializers import TokenObtainSerializer, TokenObtainPairSerializer
 from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+
+def get_client_ip(request):
+    forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
 
 
 def get_login_lifetime() -> timedelta:
@@ -48,10 +60,21 @@ class TOTPTokenObtainPairSerializer(TokenObtainPairSerializer):
                 raise AuthenticationFailed('totp_required')
 
         refresh = self.get_token(user)
-        refresh.set_exp(lifetime=get_login_lifetime())
+        lifetime = get_login_lifetime()
+        refresh.set_exp(lifetime=lifetime)
 
         if api_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, user)
+
+        request = self.context.get('request')
+        from .models import LoginSession
+        LoginSession.objects.create(
+            user=user,
+            jti=refresh['jti'],
+            ip_address=get_client_ip(request) if request else None,
+            user_agent=(request.META.get('HTTP_USER_AGENT', '') if request else '')[:300],
+            expires_at=timezone.now() + lifetime,
+        )
 
         return {
             'refresh': str(refresh),
@@ -61,3 +84,22 @@ class TOTPTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class TOTPTokenObtainPairView(TokenObtainPairView):
     serializer_class = TOTPTokenObtainPairSerializer
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def logout_view(request):
+    """Ends the current login early by revoking its LoginSession. Best-effort:
+    since refresh tokens aren't blacklisted, a client that keeps the token
+    could technically keep using it, but the app always discards it on
+    logout, and this makes the "who's logged in" view accurate."""
+    refresh = request.data.get('refresh')
+    if refresh:
+        from .models import LoginSession
+        try:
+            jti = RefreshToken(refresh)['jti']
+        except Exception:
+            jti = None
+        if jti:
+            LoginSession.objects.filter(jti=jti, revoked_at__isnull=True).update(revoked_at=timezone.now())
+    return Response(status=status.HTTP_204_NO_CONTENT)

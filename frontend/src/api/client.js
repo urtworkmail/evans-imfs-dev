@@ -37,6 +37,7 @@ api.interceptors.response.use(
 export const authApi = {
   login: (username, password, totp_code) => api.post('/auth/token/', { username, password, totp_code }),
   me: () => api.get('/users/me/'),
+  logout: (refresh) => api.post('/auth/logout/', { refresh }),
 }
 
 export const totpApi = {
@@ -97,6 +98,11 @@ export const usersApi = {
   update:           (id, data)   => api.put(`/users/${id}/`, data),
   delete:           (id)         => api.delete(`/users/${id}/`),
   permissionConfig: ()           => api.get('/users/permission_config/'),
+}
+
+export const sessionsApi = {
+  list:   ()          => api.get('/users/sessions/'),
+  revoke: (sessionId)  => api.post('/users/revoke_session/', { session_id: sessionId }),
 }
 
 export const settingsApi = {
