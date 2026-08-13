@@ -104,23 +104,36 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def sessions(self, request):
-        """Active logins across all users — Super Admin only (default IsAdmin)."""
+        """All known logins (most recent first) across all users, each tagged
+        with its current status — Super Admin only (default IsAdmin). Showing
+        the full history (not just active ones) makes it clear when a device
+        has logged out or timed out, rather than just disappearing."""
         now = timezone.now()
-        qs = (LoginSession.objects
-              .filter(revoked_at__isnull=True, expires_at__gt=now)
-              .select_related('user'))
-        data = [{
-            'id':         s.id,
-            'username':   s.user.username,
-            'full_name':  f"{s.user.first_name} {s.user.last_name}".strip() or s.user.username,
-            'role':       s.user.get_role_display(),
-            'ip_address': s.ip_address,
-            'user_agent': s.user_agent,
-            'created_at': s.created_at,
-            'expires_at': s.expires_at,
-            'is_you':     s.user_id == request.user.id,
-        } for s in qs]
-        return Response({'total_active': len(data), 'sessions': data})
+        qs = LoginSession.objects.select_related('user').order_by('-created_at')[:200]
+        data = []
+        total_active = 0
+        for s in qs:
+            if s.revoked_at:
+                sess_status = 'logged_out'
+            elif s.expires_at <= now:
+                sess_status = 'expired'
+            else:
+                sess_status = 'active'
+                total_active += 1
+            data.append({
+                'id':         s.id,
+                'username':   s.user.username,
+                'full_name':  f"{s.user.first_name} {s.user.last_name}".strip() or s.user.username,
+                'role':       s.user.get_role_display(),
+                'ip_address': s.ip_address,
+                'user_agent': s.user_agent,
+                'created_at': s.created_at,
+                'expires_at': s.expires_at,
+                'revoked_at': s.revoked_at,
+                'status':     sess_status,
+                'is_you':     s.user_id == request.user.id,
+            })
+        return Response({'total_active': total_active, 'sessions': data})
 
     @action(detail=False, methods=['post'])
     def revoke_session(self, request):

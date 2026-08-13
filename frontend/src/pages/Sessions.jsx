@@ -12,6 +12,12 @@ const ROLE_BADGE = {
   custom:             'badge badge-gray',
 }
 
+const STATUS = {
+  active:     { label: 'Active',      badge: 'badge badge-healthy' },
+  expired:    { label: 'Expired',     badge: 'badge badge-low' },
+  logged_out: { label: 'Logged Out',  badge: 'badge badge-gray' },
+}
+
 export default function Sessions() {
   const [data,    setData]    = useState({ total_active: 0, sessions: [] })
   const [loading, setLoading] = useState(true)
@@ -55,39 +61,46 @@ export default function Sessions() {
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <div style={{ fontSize: 13, color: 'var(--gray-500)' }}>{data.sessions.length} device{data.sessions.length === 1 ? '' : 's'} logged in</div>
+        <div style={{ fontSize: 13, color: 'var(--gray-500)' }}>
+          Showing {data.sessions.length} login{data.sessions.length === 1 ? '' : 's'}, most recent first.
+          Logins from before this page existed won't appear until that user signs in again.
+        </div>
         <button className="btn btn-outline btn-sm" onClick={() => { setLoading(true); load().finally(() => setLoading(false)) }}>Refresh</button>
       </div>
 
       <div className="card table-wrap">
         <table>
           <thead>
-            <tr><th>User</th><th>Role</th><th>Device</th><th>IP Address</th><th>Signed in</th><th>Expires</th><th></th></tr>
+            <tr><th>User</th><th>Role</th><th>Device</th><th>IP Address</th><th>Signed in</th><th>Expires</th><th>Status</th><th></th></tr>
           </thead>
           <tbody>
             {data.sessions.length === 0 ? (
-              <tr><td colSpan={7} style={{ textAlign: 'center', padding: 32, color: 'var(--gray-400)' }}>No active sessions.</td></tr>
-            ) : data.sessions.map(s => (
-              <tr key={s.id}>
-                <td>
-                  <div className="font-medium">{s.full_name}</div>
-                  <div className="sku-cell">{s.username}{s.is_you && <span className="badge badge-gray" style={{ marginLeft: 6 }}>This device</span>}</div>
-                </td>
-                <td><span className={ROLE_BADGE[s.role] || 'badge badge-gray'}>{s.role}</span></td>
-                <td style={{ fontSize: 12, color: 'var(--gray-600)' }}>{deviceLabel(s.user_agent)}</td>
-                <td className="sku-cell">{s.ip_address || '—'}</td>
-                <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{fmtDateTime(s.created_at)}</td>
-                <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{fmtDateTime(s.expires_at)}</td>
-                <td>
-                  {!s.is_you && (
-                    <button className="btn btn-ghost btn-xs" style={{ color: 'var(--red)' }}
-                      disabled={busyId === s.id} onClick={() => endSession(s)}>
-                      {busyId === s.id ? 'Ending…' : 'End Session'}
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+              <tr><td colSpan={8} style={{ textAlign: 'center', padding: 32, color: 'var(--gray-400)' }}>No logins recorded yet.</td></tr>
+            ) : data.sessions.map(s => {
+              const st = STATUS[s.status] || STATUS.logged_out
+              return (
+                <tr key={s.id}>
+                  <td>
+                    <div className="font-medium">{s.full_name}</div>
+                    <div className="sku-cell">{s.username}{s.is_you && <span className="badge badge-gray" style={{ marginLeft: 6 }}>This device</span>}</div>
+                  </td>
+                  <td><span className={ROLE_BADGE[s.role] || 'badge badge-gray'}>{s.role}</span></td>
+                  <td style={{ fontSize: 12, color: 'var(--gray-600)' }}>{deviceLabel(s.user_agent)}</td>
+                  <td className="sku-cell">{s.ip_address || '—'}</td>
+                  <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{fmtDateTime(s.created_at)}</td>
+                  <td style={{ fontSize: 12, color: 'var(--gray-500)' }}>{fmtDateTime(s.expires_at)}</td>
+                  <td><span className={st.badge}>{st.label}</span></td>
+                  <td>
+                    {s.status === 'active' && !s.is_you && (
+                      <button className="btn btn-ghost btn-xs" style={{ color: 'var(--red)' }}
+                        disabled={busyId === s.id} onClick={() => endSession(s)}>
+                        {busyId === s.id ? 'Ending…' : 'End Session'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
