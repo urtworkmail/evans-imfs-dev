@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { initials } from '../utils/fmt'
+import logo from '../assets/logo.png'
 
 const Icon = ({ d, size = 14 }) => (
   <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8"
@@ -87,8 +88,9 @@ export default function Sidebar() {
     <aside className="sidebar" ref={navRef}>
       {/* Logo */}
       <div className="sidebar-logo">
+        <img src={logo} alt="" className="sidebar-logo-mark" />
         <div>
-          <div className="sidebar-logo-brand">🏌️ Evans Golf IMFS</div>
+          <div className="sidebar-logo-brand">Evans Golf IMFS</div>
           <div className="sidebar-logo-sub">Inventory &amp; Forecasting</div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import Sidebar from './components/Sidebar'
 import Login from './pages/Login'
+import logo from './assets/logo.png'
 import Dashboard from './pages/Dashboard'
 import Inventory from './pages/Inventory'
 import ReorderPlanner from './pages/ReorderPlanner'
@@ -35,7 +36,7 @@ function RequireAuth({ children }) {
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', color:'var(--gray-400)', fontSize:14 }}>
       <div style={{ textAlign:'center' }}>
-        <div style={{ fontSize:32, marginBottom:12 }}>⛳</div>
+        <img src={logo} alt="" style={{ width:44, height:44, marginBottom:12 }} />
         <div>Loading Evans Golf IMFS…</div>
       </div>
     </div>
