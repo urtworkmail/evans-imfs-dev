@@ -455,22 +455,33 @@ export default function Settings() {
         {!credsUnlocked && (
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-            justifyContent: 'center', zIndex: 2, minHeight: 320,
+            justifyContent: 'center', zIndex: 2, minHeight: 320, padding: 16,
           }}>
-            <div className="card card-pad" style={{ maxWidth: 340, width: '100%', textAlign: 'center', boxShadow: '0 8px 28px rgba(0,0,0,.18)' }}>
-              <div style={{ fontSize: 26, marginBottom: 6 }}>🔒</div>
-              <div className="section-title" style={{ marginBottom: 4 }}>Credentials Hidden</div>
-              <p style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 16 }}>
-                Confirm your password{user?.totp_enabled ? ' and authentication code' : ''} to view or edit API integration credentials.
-              </p>
-              {unlockError && <AlertBanner type="critical">{unlockError}</AlertBanner>}
-              <div className="form-group" style={{ textAlign: 'left' }}>
-                <label className="form-label">Password</label>
-                <input className="form-input" type="password" autoFocus
-                  value={unlockPwd} onChange={e => setUnlockPwd(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !user?.totp_enabled) unlockCreds() }} />
+            {!user?.totp_enabled ? (
+              <div className="card card-pad" style={{ maxWidth: 460, width: '100%', textAlign: 'center', boxShadow: '0 8px 28px rgba(0,0,0,.18)' }}>
+                <div style={{ fontSize: 26, marginBottom: 6 }}>🔒</div>
+                <div className="section-title" style={{ marginBottom: 4 }}>Two-Factor Authentication Required</div>
+                <p style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 16 }}>
+                  API integration credentials can only be viewed by admins with two-factor
+                  authentication enabled. Set it up under Security to unlock this tab.
+                </p>
+                <button className="btn btn-primary" onClick={() => setTab('security')}>
+                  Go to Security Settings
+                </button>
               </div>
-              {user?.totp_enabled && (
+            ) : (
+              <div className="card card-pad" style={{ maxWidth: 460, width: '100%', textAlign: 'center', boxShadow: '0 8px 28px rgba(0,0,0,.18)' }}>
+                <div style={{ fontSize: 26, marginBottom: 6 }}>🔒</div>
+                <div className="section-title" style={{ marginBottom: 4 }}>Credentials Hidden</div>
+                <p style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 16 }}>
+                  Confirm your password and authentication code to view or edit API integration credentials.
+                </p>
+                {unlockError && <AlertBanner type="critical">{unlockError}</AlertBanner>}
+                <div className="form-group" style={{ textAlign: 'left' }}>
+                  <label className="form-label">Password</label>
+                  <input className="form-input" type="password" autoFocus
+                    value={unlockPwd} onChange={e => setUnlockPwd(e.target.value)} />
+                </div>
                 <div className="form-group" style={{ textAlign: 'left' }}>
                   <label className="form-label">Authentication Code</label>
                   <input className="form-input" type="text" inputMode="numeric"
@@ -479,12 +490,12 @@ export default function Settings() {
                     onKeyDown={e => { if (e.key === 'Enter') unlockCreds() }}
                     placeholder="123456" />
                 </div>
-              )}
-              <button className="btn btn-primary" style={{ width: '100%' }} onClick={unlockCreds}
-                disabled={unlockBusy || !unlockPwd || (user?.totp_enabled && unlockTotp.length !== 6)}>
-                {unlockBusy ? 'Verifying…' : 'Unlock'}
-              </button>
-            </div>
+                <button className="btn btn-primary" style={{ width: '100%' }} onClick={unlockCreds}
+                  disabled={unlockBusy || !unlockPwd || unlockTotp.length !== 6}>
+                  {unlockBusy ? 'Verifying…' : 'Unlock'}
+                </button>
+              </div>
+            )}
           </div>
         )}
         </div>

@@ -66,17 +66,23 @@ def system_settings(request):
 @permission_classes([IsAdmin])
 def reveal_credentials(request):
     """Step-up re-auth before showing real API integration credential values.
-    Requires the admin's current password, plus their TOTP code if they have
-    two-factor enabled. Every reveal is written to the audit log."""
+    Two-factor authentication is mandatory here — an admin who hasn't set up
+    TOTP cannot reveal credentials at all, password alone is not enough.
+    Every reveal is written to the audit log."""
+    user = request.user
+    if not user.totp_enabled:
+        return Response(
+            {'detail': 'Two-factor authentication must be enabled before integration credentials can be viewed. Enable it under Settings → Security.'},
+            status=drf_status.HTTP_403_FORBIDDEN,
+        )
+
     password  = request.data.get('password') or ''
     totp_code = (request.data.get('totp_code') or '').strip()
-    user = request.user
 
     if not user.check_password(password):
         return Response({'detail': 'Incorrect password.'}, status=drf_status.HTTP_400_BAD_REQUEST)
-    if user.totp_enabled:
-        if not totp_code or not pyotp.TOTP(user.totp_secret).verify(totp_code, valid_window=1):
-            return Response({'detail': 'Invalid authentication code.'}, status=drf_status.HTTP_400_BAD_REQUEST)
+    if not totp_code or not pyotp.TOTP(user.totp_secret).verify(totp_code, valid_window=1):
+        return Response({'detail': 'Invalid authentication code.'}, status=drf_status.HTTP_400_BAD_REQUEST)
 
     values = {s.key: s.value for s in SystemSetting.objects.filter(key__in=CREDENTIAL_KEYS)}
     from auditlog.utils import log_action
