@@ -105,11 +105,16 @@ export const sessionsApi = {
   revoke: (sessionId)  => api.post('/users/revoke_session/', { session_id: sessionId }),
 }
 
+export const auditApi = {
+  list: (params) => api.get('/audit-log/', { params }),
+}
+
 export const settingsApi = {
   getSchedule:  ()     => api.get('/settings/fetch-schedule/'),
   saveSchedule: (data) => api.put('/settings/fetch-schedule/', data),
   getSystem:    ()     => api.get('/settings/system/'),
   saveSystem:   (data) => api.put('/settings/system/', data),
+  revealCredentials: (password, totp_code) => api.post('/settings/system/reveal/', { password, totp_code }),
 }
 
 export default api

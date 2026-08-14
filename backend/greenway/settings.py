@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'settings_app',
     'forecasting',
     'purchasing',
+    'auditlog',
 ]
 
 MIDDLEWARE = [

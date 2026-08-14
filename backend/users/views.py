@@ -22,6 +22,26 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class   = UserSerializer
     permission_classes = [IsAdmin]
 
+    def perform_create(self, serializer):
+        from auditlog.utils import log_action
+        password_set = bool(serializer.validated_data.get('password'))
+        user = serializer.save()
+        log_action(self.request, 'user.created', target=user.username,
+                   details={'role': user.role, 'is_active': user.is_active, 'password_set': password_set})
+
+    def perform_update(self, serializer):
+        from auditlog.utils import log_action
+        password_changed = bool(serializer.validated_data.get('password'))
+        user = serializer.save()
+        log_action(self.request, 'user.updated', target=user.username,
+                   details={'role': user.role, 'is_active': user.is_active, 'password_changed': password_changed})
+
+    def perform_destroy(self, instance):
+        from auditlog.utils import log_action
+        username = instance.username
+        instance.delete()
+        log_action(self.request, 'user.deleted', target=username)
+
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def me(self, request):
         serializer = self.get_serializer(request.user)
@@ -88,6 +108,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
         request.user.totp_enabled = True
         request.user.save(update_fields=['totp_enabled'])
+        from auditlog.utils import log_action
+        log_action(request, 'user.totp_enabled', target=request.user.username)
         return Response({'detail': 'Two-factor authentication enabled.'})
 
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
@@ -100,6 +122,8 @@ class UserViewSet(viewsets.ModelViewSet):
         request.user.totp_secret = None
         request.user.totp_enabled = False
         request.user.save(update_fields=['totp_secret', 'totp_enabled'])
+        from auditlog.utils import log_action
+        log_action(request, 'user.totp_disabled', target=request.user.username)
         return Response({'detail': 'Two-factor authentication disabled.'})
 
     @action(detail=False, methods=['get'])
@@ -139,7 +163,11 @@ class UserViewSet(viewsets.ModelViewSet):
     def revoke_session(self, request):
         """Ends a specific login early (e.g. a lost/stolen device)."""
         session_id = request.data.get('session_id')
-        updated = LoginSession.objects.filter(id=session_id, revoked_at__isnull=True).update(revoked_at=timezone.now())
-        if not updated:
+        session = LoginSession.objects.filter(id=session_id, revoked_at__isnull=True).select_related('user').first()
+        if not session:
             return Response({'detail': 'Session not found or already ended.'}, status=status.HTTP_404_NOT_FOUND)
+        session.revoked_at = timezone.now()
+        session.save(update_fields=['revoked_at'])
+        from auditlog.utils import log_action
+        log_action(request, 'session.revoked', target=session.user.username, details={'session_id': session.id})
         return Response({'detail': 'Session ended.'})

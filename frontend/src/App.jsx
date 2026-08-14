@@ -16,6 +16,7 @@ import Forecast from './pages/Forecast'
 import Comparison from './pages/Comparison'
 import UserManagement from './pages/UserManagement'
 import Sessions from './pages/Sessions'
+import AuditLog from './pages/AuditLog'
 import Settings from './pages/Settings'
 
 const PAGE_META = {
@@ -30,6 +31,7 @@ const PAGE_META = {
   '/comparison':      { title: 'Comparison Analysis', subtitle: 'Compare sales performance across two periods.' },
   '/users':           { title: 'User Management',     subtitle: 'Manage accounts, roles, and permissions.' },
   '/sessions':        { title: 'Active Sessions',     subtitle: 'Devices currently logged in across the platform.' },
+  '/audit-log':       { title: 'Audit Log',           subtitle: 'Security and administration activity across the platform.' },
   '/settings':        { title: 'Settings',              subtitle: 'Fetch schedule, inventory parameters, integrations, and security.' },
 }
 
@@ -85,6 +87,7 @@ function AppLayout() {
               <Route path="/comparison"      element={<Comparison />} />
               <Route path="/users"           element={<RequireAdmin><UserManagement /></RequireAdmin>} />
               <Route path="/sessions"        element={<RequireAdmin><Sessions /></RequireAdmin>} />
+              <Route path="/audit-log"       element={<RequireAdmin><AuditLog /></RequireAdmin>} />
               <Route path="/settings"        element={<RequireAdmin><Settings /></RequireAdmin>} />
               <Route path="*"               element={<Navigate to="/" replace />} />
             </Routes>

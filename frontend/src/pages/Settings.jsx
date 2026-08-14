@@ -56,6 +56,13 @@ export default function Settings() {
   const [disablePwd,    setDisablePwd]    = useState('')
   const [showDisable,   setShowDisable]   = useState(false)
 
+  // ── API credentials lock/reveal — blurred until password (+ TOTP) confirmed ──
+  const [credsUnlocked, setCredsUnlocked] = useState(false)
+  const [unlockPwd,     setUnlockPwd]     = useState('')
+  const [unlockTotp,    setUnlockTotp]    = useState('')
+  const [unlockBusy,    setUnlockBusy]    = useState(false)
+  const [unlockError,   setUnlockError]   = useState('')
+
   useEffect(() => {
     Promise.all([settingsApi.getSchedule(), settingsApi.getSystem()])
       .then(([s, sys]) => {
@@ -112,6 +119,35 @@ export default function Settings() {
     try   { await settingsApi.saveSystem(creds); showMsg('API credentials saved.') }
     catch { showMsg('Error saving credentials.', 'error') }
     finally { setSaving(false) }
+  }
+
+  const unlockCreds = async () => {
+    setUnlockBusy(true); setUnlockError('')
+    try {
+      const { data } = await settingsApi.revealCredentials(unlockPwd, unlockTotp)
+      setCreds(prev => ({ ...prev, ...data }))
+      setCredsUnlocked(true)
+      setUnlockPwd(''); setUnlockTotp('')
+    } catch (e) {
+      setUnlockError(e.response?.data?.detail || 'Could not verify. Try again.')
+    } finally { setUnlockBusy(false) }
+  }
+
+  const lockCreds = async () => {
+    try {
+      const { data } = await settingsApi.getSystem()
+      setCreds(prev => ({
+        ...prev,
+        shopify_shop_url:     data.shopify_shop_url     || '',
+        shopify_access_token: data.shopify_access_token || '',
+        qb_client_id:         data.qb_client_id         || '',
+        qb_client_secret:     data.qb_client_secret     || '',
+        qb_realm_id:          data.qb_realm_id          || '',
+        qb_refresh_token:     data.qb_refresh_token     || '',
+        qb_environment:       data.qb_environment       || 'sandbox',
+      }))
+    } catch { /* best-effort — keep whatever's in state if the refetch fails */ }
+    setCredsUnlocked(false)
   }
 
   const startTotpSetup = async () => {
@@ -296,7 +332,13 @@ export default function Settings() {
 
       {/* ── API INTEGRATIONS ── */}
       {tab === 'integrations' && (
-        <div>
+        <div style={{ position: 'relative' }}>
+        <div style={{
+          filter: credsUnlocked ? 'none' : 'blur(6px)',
+          pointerEvents: credsUnlocked ? 'auto' : 'none',
+          userSelect: credsUnlocked ? 'auto' : 'none',
+          transition: 'filter .15s',
+        }}>
           {/* Shopify */}
           <div className="card card-pad mb-4">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4, flexWrap: 'wrap' }}>
@@ -393,6 +435,7 @@ export default function Settings() {
             <button className="btn btn-primary" onClick={saveCreds} disabled={saving}>
               {saving ? 'Saving…' : 'Save API Credentials'}
             </button>
+            <button className="btn btn-outline" onClick={lockCreds}>🔒 Hide Credentials</button>
             <span style={{ fontSize: 12, color: 'var(--gray-500)' }}>
               After saving, use the Fetch buttons on the Sales page to test the connection.
             </span>
@@ -407,6 +450,43 @@ export default function Settings() {
             For production, set them as environment variables in your <code>.env</code> file instead —
             environment variables always take priority over database values.
           </div>
+        </div>
+
+        {!credsUnlocked && (
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', zIndex: 2, minHeight: 320,
+          }}>
+            <div className="card card-pad" style={{ maxWidth: 340, width: '100%', textAlign: 'center', boxShadow: '0 8px 28px rgba(0,0,0,.18)' }}>
+              <div style={{ fontSize: 26, marginBottom: 6 }}>🔒</div>
+              <div className="section-title" style={{ marginBottom: 4 }}>Credentials Hidden</div>
+              <p style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 16 }}>
+                Confirm your password{user?.totp_enabled ? ' and authentication code' : ''} to view or edit API integration credentials.
+              </p>
+              {unlockError && <AlertBanner type="critical">{unlockError}</AlertBanner>}
+              <div className="form-group" style={{ textAlign: 'left' }}>
+                <label className="form-label">Password</label>
+                <input className="form-input" type="password" autoFocus
+                  value={unlockPwd} onChange={e => setUnlockPwd(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !user?.totp_enabled) unlockCreds() }} />
+              </div>
+              {user?.totp_enabled && (
+                <div className="form-group" style={{ textAlign: 'left' }}>
+                  <label className="form-label">Authentication Code</label>
+                  <input className="form-input" type="text" inputMode="numeric"
+                    value={unlockTotp}
+                    onChange={e => setUnlockTotp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onKeyDown={e => { if (e.key === 'Enter') unlockCreds() }}
+                    placeholder="123456" />
+                </div>
+              )}
+              <button className="btn btn-primary" style={{ width: '100%' }} onClick={unlockCreds}
+                disabled={unlockBusy || !unlockPwd || (user?.totp_enabled && unlockTotp.length !== 6)}>
+                {unlockBusy ? 'Verifying…' : 'Unlock'}
+              </button>
+            </div>
+          </div>
+        )}
         </div>
       )}
 

@@ -49,14 +49,25 @@ class TOTPTokenObtainPairSerializer(TokenObtainPairSerializer):
     totp_code = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     def validate(self, attrs):
+        from auditlog.utils import log_action
+        request = self.context.get('request')
         totp_code = (attrs.pop('totp_code', '') or '').strip()
+        attempted_username = str(attrs.get(self.username_field, ''))[:200]
+
         # Call the auth-only base validate (sets self.user) — we build the
         # tokens ourselves below instead of the parent's, so we control exp.
-        TokenObtainSerializer.validate(self, attrs)
+        try:
+            TokenObtainSerializer.validate(self, attrs)
+        except AuthenticationFailed:
+            if request:
+                log_action(request, 'auth.login_failed', target=attempted_username)
+            raise
 
         user = self.user
         if user.role == 'admin' and user.totp_enabled:
             if not totp_code or not pyotp.TOTP(user.totp_secret).verify(totp_code, valid_window=1):
+                if request:
+                    log_action(request, 'auth.login_failed_totp', target=user.username)
                 raise AuthenticationFailed('totp_required')
 
         refresh = self.get_token(user)
@@ -66,7 +77,6 @@ class TOTPTokenObtainPairSerializer(TokenObtainPairSerializer):
         if api_settings.UPDATE_LAST_LOGIN:
             update_last_login(None, user)
 
-        request = self.context.get('request')
         from .models import LoginSession
         LoginSession.objects.create(
             user=user,
@@ -75,6 +85,8 @@ class TOTPTokenObtainPairSerializer(TokenObtainPairSerializer):
             user_agent=(request.META.get('HTTP_USER_AGENT', '') if request else '')[:300],
             expires_at=timezone.now() + lifetime,
         )
+        if request:
+            log_action(request, 'auth.login', target=user.username)
 
         return {
             'refresh': str(refresh),
@@ -96,10 +108,15 @@ def logout_view(request):
     refresh = request.data.get('refresh')
     if refresh:
         from .models import LoginSession
+        from auditlog.utils import log_action
         try:
             jti = RefreshToken(refresh)['jti']
         except Exception:
             jti = None
         if jti:
-            LoginSession.objects.filter(jti=jti, revoked_at__isnull=True).update(revoked_at=timezone.now())
+            session = LoginSession.objects.filter(jti=jti, revoked_at__isnull=True).first()
+            if session:
+                session.revoked_at = timezone.now()
+                session.save(update_fields=['revoked_at'])
+                log_action(request, 'auth.logout', target=session.user.username)
     return Response(status=status.HTTP_204_NO_CONTENT)
