@@ -29,11 +29,14 @@ def status_view(request):
             'error':       latest.error if latest else '',
             'checked_at':  latest.checked_at if latest else None,
         })
-    down = [r for r in rows if r['is_up'] is not True]
+    down    = [r for r in rows if r['is_up'] is False]
+    unknown = [r for r in rows if r['is_up'] is None]
+    up_count = len(rows) - len(down) - len(unknown)
     return Response({
         'total':      len(rows),
-        'up':         len(rows) - len(down),
+        'up':         up_count,
         'down':       len(down),
+        'unknown':    len(unknown),
         'endpoints':  rows,
         'checked_at': max((r['checked_at'] for r in rows if r['checked_at']), default=None),
     })

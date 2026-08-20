@@ -52,24 +52,38 @@ export default function StatusChecker() {
   if (loading) return <Spinner />
   if (error)   return <div style={{ padding: 40, color: 'var(--red)', textAlign: 'center' }}>⚠ {error} <button className="btn btn-outline btn-sm" style={{ marginLeft: 12 }} onClick={load}>Retry</button></div>
 
-  const allUp = data.down === 0
+  const hasDown    = data.down > 0
+  const hasUnknown = data.unknown > 0
+  const allUp      = !hasDown && !hasUnknown
+  const borderColor = hasDown ? 'var(--red)' : hasUnknown ? 'var(--amber)' : 'var(--green)'
+  const icon         = hasDown ? '⚠️' : hasUnknown ? '⏳' : '✅'
+  const headline = hasDown
+    ? `${data.down} of ${data.total} endpoints down`
+    : hasUnknown
+      ? `${data.unknown} of ${data.total} endpoints not yet checked`
+      : 'All Systems Operational'
 
   return (
     <div>
       <div className="card card-pad mb-4" style={{
         display: 'flex', alignItems: 'center', gap: 14,
-        borderLeft: `4px solid ${allUp ? 'var(--green)' : 'var(--red)'}`,
+        borderLeft: `4px solid ${borderColor}`,
       }}>
-        <div style={{ fontSize: 26 }}>{allUp ? '✅' : '⚠️'}</div>
+        <div style={{ fontSize: 26 }}>{icon}</div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 600, fontSize: 15 }}>
-            {allUp ? 'All Systems Operational' : `${data.down} of ${data.total} endpoints down`}
-          </div>
+          <div style={{ fontWeight: 600, fontSize: 15 }}>{headline}</div>
           <div style={{ fontSize: 12, color: 'var(--gray-500)' }}>
-            {data.up} of {data.total} endpoints up · checked every 60 seconds · last checked {fmtDateTime(data.checked_at)}
+            {data.up} up{hasDown ? `, ${data.down} down` : ''}{hasUnknown ? `, ${data.unknown} unknown` : ''} of {data.total}
+            {' '}· checked every 60 seconds · last checked {fmtDateTime(data.checked_at)}
           </div>
         </div>
       </div>
+      {hasUnknown && !hasDown && (
+        <AlertBanner type="info">
+          The checker hasn't run yet for {data.unknown} endpoint{data.unknown === 1 ? '' : 's'} — the first
+          check happens within 60 seconds of the scheduler picking up the job after a fresh deploy or restart.
+        </AlertBanner>
+      )}
 
       <div className="card card-pad mb-4">
         <div className="section-title" style={{ marginBottom: 4 }}>Notifications</div>

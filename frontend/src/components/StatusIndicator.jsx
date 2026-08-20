@@ -22,12 +22,19 @@ export default function StatusIndicator() {
   }, [load])
 
   if (!data) return null
-  const allUp = data.down === 0
+  const hasDown    = data.down > 0
+  const hasUnknown = data.unknown > 0
+  const dotColor   = hasDown ? 'var(--red)' : hasUnknown ? 'var(--amber)' : 'var(--green)'
+  const glowColor  = hasDown ? 'var(--red-light)' : hasUnknown ? 'var(--amber-light)' : 'var(--green-light)'
+  const label = hasDown ? `${data.down} Down` : hasUnknown ? `${data.unknown} Unchecked` : 'Systems Operational'
+  const title = hasDown ? `${data.down} endpoint(s) down`
+    : hasUnknown ? `${data.unknown} endpoint(s) not yet checked`
+    : 'All systems operational'
 
   return (
     <button
       onClick={() => navigate('/status')}
-      title={allUp ? 'All systems operational' : `${data.down} endpoint(s) down`}
+      title={title}
       style={{
         display: 'flex', alignItems: 'center', gap: 6,
         padding: '6px 10px', borderRadius: 999, border: '1px solid var(--gray-200)',
@@ -37,10 +44,10 @@ export default function StatusIndicator() {
     >
       <span style={{
         width: 8, height: 8, borderRadius: '50%',
-        background: allUp ? 'var(--green)' : 'var(--red)',
-        boxShadow: allUp ? '0 0 0 3px var(--green-light)' : '0 0 0 3px var(--red-light)',
+        background: dotColor,
+        boxShadow: `0 0 0 3px ${glowColor}`,
       }} />
-      {allUp ? 'Systems Operational' : `${data.down} Down`}
+      {label}
     </button>
   )
 }
