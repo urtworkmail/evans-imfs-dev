@@ -117,4 +117,9 @@ export const settingsApi = {
   revealCredentials: (password, totp_code) => api.post('/settings/system/reveal/', { password, totp_code }),
 }
 
+export const monitoringApi = {
+  status:      () => api.get('/monitoring/status/'),
+  serverUsage: () => api.get('/monitoring/server-usage/'),
+}
+
 export default api

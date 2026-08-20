@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import ErrorBoundary from './components/ErrorBoundary'
 import Sidebar from './components/Sidebar'
+import StatusIndicator from './components/StatusIndicator'
 import Login from './pages/Login'
 import logo from './assets/logo.png'
 import Dashboard from './pages/Dashboard'
@@ -17,6 +18,8 @@ import Comparison from './pages/Comparison'
 import UserManagement from './pages/UserManagement'
 import Sessions from './pages/Sessions'
 import AuditLog from './pages/AuditLog'
+import StatusChecker from './pages/StatusChecker'
+import ServerUsage from './pages/ServerUsage'
 import Settings from './pages/Settings'
 
 const PAGE_META = {
@@ -32,6 +35,8 @@ const PAGE_META = {
   '/users':           { title: 'User Management',     subtitle: 'Manage accounts, roles, and permissions.' },
   '/sessions':        { title: 'Active Sessions',     subtitle: 'Devices currently logged in across the platform.' },
   '/audit-log':       { title: 'Audit Log',           subtitle: 'Security and administration activity across the platform.' },
+  '/status':          { title: 'Status Checker',      subtitle: 'Live endpoint health checks, run every 60 seconds.' },
+  '/server-usage':    { title: 'Server Usage',        subtitle: 'CPU, memory, and disk usage on the server.' },
   '/settings':        { title: 'Settings',              subtitle: 'Fetch schedule, inventory parameters, integrations, and security.' },
 }
 
@@ -62,6 +67,7 @@ function RequireAdmin({ children }) {
 
 function AppLayout() {
   const location = useLocation()
+  const { user } = useAuth()
   const meta = PAGE_META[location.pathname] || { title: 'Evans Golf IMFS' }
   return (
     <div className="app-shell">
@@ -73,6 +79,7 @@ function AppLayout() {
               <div className="page-title">{meta.title}</div>
               {meta.subtitle && <div className="page-subtitle">{meta.subtitle}</div>}
             </div>
+            {user?.role === 'admin' && <StatusIndicator />}
           </div>
           <ErrorBoundary key={location.pathname}>
             <Routes>
@@ -88,6 +95,8 @@ function AppLayout() {
               <Route path="/users"           element={<RequireAdmin><UserManagement /></RequireAdmin>} />
               <Route path="/sessions"        element={<RequireAdmin><Sessions /></RequireAdmin>} />
               <Route path="/audit-log"       element={<RequireAdmin><AuditLog /></RequireAdmin>} />
+              <Route path="/status"          element={<RequireAdmin><StatusChecker /></RequireAdmin>} />
+              <Route path="/server-usage"    element={<RequireAdmin><ServerUsage /></RequireAdmin>} />
               <Route path="/settings"        element={<RequireAdmin><Settings /></RequireAdmin>} />
               <Route path="*"               element={<Navigate to="/" replace />} />
             </Routes>

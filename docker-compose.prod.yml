@@ -37,6 +37,14 @@ services:
       QB_REFRESH_TOKEN: ${QB_REFRESH_TOKEN}
       QB_ENVIRONMENT: ${QB_ENVIRONMENT}
     restart: always
+    # Read-only host mounts so the Server Usage page reports real host
+    # CPU/memory/disk instead of just this container's cgroup view.
+    # /proc is not namespaced by Docker anyway, but /host gives an accurate
+    # root-disk reading (the thing that actually filled up before).
+    volumes:
+      - ./backups:/app/backups
+      - /proc:/host/proc:ro
+      - /:/host:ro
     logging:
       driver: "json-file"
       options:

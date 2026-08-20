@@ -13,3 +13,4 @@ intuit-oauth
 python-quickbooks
 pyotp==2.9.0
 qrcode[pil]==7.4.2
+psutil==6.0.0
