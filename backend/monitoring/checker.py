@@ -14,9 +14,15 @@ MONITOR_USERNAME = 'system-monitor'
 def _monitor_client():
     """In-process authenticated client — runs each check through the real
     URL routing, middleware, permissions, and DB, without a real network
-    hop or a live JWT to manage/rotate."""
+    hop or a live JWT to manage/rotate.
+
+    SERVER_NAME must be a host that's actually in ALLOWED_HOSTS — Django's
+    test client defaults to 'testserver', which isn't, so without this every
+    request gets rejected by the ALLOWED_HOSTS check before it even reaches
+    the view (every endpoint reads as "down" for a reason that has nothing
+    to do with whether the endpoint actually works)."""
     from users.models import User
-    client = APIClient(raise_request_exception=False)
+    client = APIClient(raise_request_exception=False, SERVER_NAME='backend')
     user = User.objects.filter(username=MONITOR_USERNAME).first()
     if user:
         client.force_authenticate(user=user)
