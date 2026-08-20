@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 # Fixed recipients per the client's requirements — not admin-configurable,
 # unlike the Slack webhook (which lives in SystemSetting since it's an
 # operational integration detail, not a security-sensitive credential).
-DELIVERY_RECIPIENT = 'matt@egoperations.com'
+DELIVERY_RECIPIENT = 'matt@evansgolfcompany.com'
 ISSUE_RECIPIENT     = 'silicatelabs@gmail.com'
 
 

@@ -74,9 +74,9 @@ export default function StatusChecker() {
       <div className="card card-pad mb-4">
         <div className="section-title" style={{ marginBottom: 4 }}>Notifications</div>
         <p style={{ fontSize: 13, color: 'var(--gray-500)', marginBottom: 14 }}>
-          A daily status report goes to <strong>matt@egoperations.com</strong> every 24 hours, plus Slack below
+          A daily status report goes to <strong>matt@evansgolfcompany.com</strong> every 24 hours, plus Slack below
           if a webhook is set. If any endpoint is down, an alert also goes to
-          <strong> silicatelabs@gmail.com</strong> and matt@egoperations.com; otherwise silicatelabs@gmail.com
+          <strong> silicatelabs@gmail.com</strong> and matt@evansgolfcompany.com; otherwise silicatelabs@gmail.com
           gets a daily all-clear listing every endpoint.
         </p>
         {webhookMsg && <AlertBanner type={webhookMsg.type === 'success' ? 'success' : 'critical'}>{webhookMsg.text}</AlertBanner>}
